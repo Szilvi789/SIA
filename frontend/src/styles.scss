@@ -1,0 +1,251 @@
+@use '@angular/material' as mat;
+html {
+  @include mat.theme((
+    color: (primary: mat.$cyan-palette, tertiary: mat.$green-palette),
+    typography: 'Segoe UI, -apple-system, BlinkMacSystemFont, sans-serif',
+    density: -2
+  ));
+  --mat-sys-primary: #315c4b;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #e2ecdf;
+  --mat-sys-on-primary-container: #234735;
+  --mat-sys-surface: #ffffff;
+  --mat-sys-on-surface: #23382d;
+  --mat-sys-outline: #a5ada1;
+  --mat-sys-outline-variant: #e0e3d9;
+  --mat-sys-corner-full: 7px;
+  --mat-sys-label-large-font: 'Segoe UI', sans-serif;
+  --mat-sys-label-large-weight: 550;
+  --mat-sys-label-large-size: 12px;
+}
+:root {
+  --ink:#1c3027;
+  --paper:#f8f9f5;
+  --text:#293a2f;
+  --muted:#637059;
+  --border:#e4e7de;
+  --green:#315c4b;
+  --soft:#eef1e8
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--text);
+  font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-size:14px
+}
+button,input,textarea,select {
+  font:inherit
+}
+button,a,input,textarea,select {
+  -webkit-tap-highlight-color:transparent
+}
+a {
+  color:var(--green)
+}
+button {
+  cursor:pointer
+}
+button:disabled {
+  cursor:default
+}
+a:focus-visible,button:focus-visible {
+  outline:2px solid #7e9978;
+  outline-offset:4px
+}
+h1,h2,h3,p {
+  margin-top:0
+}
+h1 {
+  font-size:29px;
+  line-height:1.2;
+  letter-spacing:-1px;
+  font-weight:550;
+  margin-bottom:10px
+}
+h2 {
+  font-size:17px;
+  letter-spacing:-.3px;
+  font-weight:550
+}
+h3 {
+  font-size:14px;
+  font-weight:550
+}
+p {
+  line-height:1.7
+}
+::selection {
+  background:#dceacb
+}
+textarea {
+  resize:vertical
+}
+.eyebrow {
+  font-size:10px;
+  font-weight:650;
+  letter-spacing:1.5px;
+  color:var(--muted)
+}
+.page-title {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:30px
+}
+.page-title p {
+  margin-bottom:0;
+  font-size:12px;
+  color:var(--muted)
+}
+.section-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin:29px 0 16px
+}
+.section-heading h2 {
+  margin:0
+}
+.section-heading a {
+  font-size:12px;
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.section-heading a app-icon {
+  width:14px;
+  height:14px
+}
+.panel {
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:10px
+}
+.button-icon {
+  display:inline-flex!important;
+  gap:8px
+}
+.button-icon app-icon {
+  height:16px;
+  width:16px
+}
+.muted {
+  color:var(--muted)
+}
+.notice {
+  background:#f0f3e9;
+  border:1px solid #e3e8d9;
+  border-radius:7px;
+  font-size:12px;
+  line-height:1.7;
+  padding:12px 15px;
+  color:#707b63
+}
+.error-message {
+  padding:12px 15px;
+  border-radius:6px;
+  background:#fff1eb;
+  border:1px solid #edcfc3;
+  font-size:12px;
+  line-height:1.6;
+  color:#854b39
+}
+.empty-loading {
+  padding:45px 20px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px
+}
+.tag {
+  font-size:10px;
+  font-weight:500;
+  padding:4px 8px;
+  border-radius:5px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:#f1f3eb;
+  color:#637059
+}
+.agent-icon {
+  display:grid;
+  place-items:center;
+  width:43px;
+  height:43px;
+  border-radius:11px;
+  background:#e9eee4;
+  color:#60734b
+}
+.agent-icon.translation-agent {
+  background:#eeebf6;
+  color:#81729e
+}
+.agent-icon.email-assistant {
+  background:#f8eddf;
+  color:#637059
+}
+.agent-icon.documentation-agent {
+  background:#e5eff1;
+  color:#637059
+}
+.agent-icon app-icon {
+  width:23px;
+  height:23px
+}
+.mat-mdc-form-field {
+  width:100%
+}
+.mat-mdc-form-field-infix {
+  min-height:46px!important
+}
+.mat-mdc-floating-label {
+  font-size:12px!important
+}
+.mat-mdc-select-value-text,.mat-mdc-input-element {
+  font-size:12px!important
+}
+.mat-mdc-form-field-hint {
+  font-size:12px
+}
+.mat-mdc-form-field-subscript-wrapper {
+  font-size:12px
+}
+.mat-mdc-unelevated-button {
+  border-radius:7px!important
+}
+.mat-mdc-outlined-button {
+  border-color:#d9dfd2!important;
+  border-radius:7px!important
+}
+.mat-mdc-button {
+  border-radius:7px!important
+}
+code {
+  font-family:Consolas,'SFMono-Regular',monospace;
+  font-size:12px;
+  background:#eff1ea;
+  border-radius:4px;
+  padding:3px 5px
+}
+@media(max-width:760px) {
+  h1 {
+    font-size:26px
+  }
+  .page-title {
+    flex-wrap:wrap
+  }
+  .page-title p {
+    max-width:300px
+  }
+  .section-heading {
+    margin-top:24px
+  }
+}
