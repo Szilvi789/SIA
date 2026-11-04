@@ -1,9 +1,10 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withHashLocation } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { API_BASE_URL } from './app/core/api.service';
 import { routes } from './app/app.routes';
+import { runtimeModeInterceptor } from './app/core/runtime-context.service';
 
 async function start(): Promise<void> {
   const response = await fetch('./config.json');
@@ -14,7 +15,7 @@ async function start(): Promise<void> {
   }
   await bootstrapApplication(AppComponent, {
     providers: [
-      provideHttpClient(),
+      provideHttpClient(withInterceptors([runtimeModeInterceptor])),
       provideRouter(routes, withHashLocation()),
       { provide: API_BASE_URL, useValue: config.apiBaseUrl.replace(/\/$/, '') }
     ]

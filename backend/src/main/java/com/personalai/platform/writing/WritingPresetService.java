@@ -8,6 +8,7 @@ import com.personalai.platform.rules.RuleScope;
 import com.personalai.platform.rules.RuleService;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WritingPresetService {
@@ -26,16 +27,22 @@ public class WritingPresetService {
                 "writing-translation", "Preserve meaning and use natural phrasing in the output language.");
     }
     private void seed(String id, String name, String description, WritingWorkflow workflow, String ruleId, String markdown) {
-        if (repository.findById(id).isEmpty()) store(new WritingPreset(id, name, description, workflow, true, List.of(ruleId), markdown, null));
+        if (repository.findById(id).isEmpty()) {
+            var preset = new WritingPreset(id, name, description, workflow, true, List.of(ruleId), markdown, null);
+            rules.saveDefaultIfAbsent(new RuleDocument(markdownRuleId(preset), markdownRuleId(preset) + ".md", RuleScope.AGENT, markdown));
+            repository.saveDefaultIfAbsent(preset);
+        }
     }
     public List<WritingPreset> findAll() { return repository.findAll(); }
     public WritingPreset findById(String id) {
         return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Writing preset was not found."));
     }
+    @Transactional
     public synchronized WritingPreset create(WritingPreset preset) {
         if (repository.findById(preset.id()).isPresent()) throw new InvalidConfigurationException("id", "A preset with this ID already exists.");
         return store(preset);
     }
+    @Transactional
     public synchronized WritingPreset update(String id, WritingPreset preset) {
         findById(id);
         if (!id.equals(preset.id())) throw new InvalidConfigurationException("id", "A preset ID cannot change.");

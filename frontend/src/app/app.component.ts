@@ -14,19 +14,19 @@ import { WorkspaceService } from './core/workspace.service';
       @if (menuOpen()) { <button class="sidebar-overlay" aria-label="Close navigation" (click)="menuOpen.set(false)"></button> }
       <aside class="sidebar" [class.is-open]="menuOpen()" aria-label="Main navigation">
         <a routerLink="/dashboard" class="brand" (click)="menuOpen.set(false)"><span class="brand-mark"><app-icon name="spark" /></span><span>Agent<span class="brand-light">Studio</span></span></a>
-        <div class="workspace-label">PERSONAL WORKSPACE <span>01</span></div>
+        <div class="workspace-label">{{workspace.runtimeConfig().mode === 'personal' ? 'PERSONAL WORKSPACE' : 'SYNTHETIC DEMO'}} <span>01</span></div>
         <nav>
           @for (item of navigation; track item.path) {
             <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen.set(false)"><app-icon [name]="item.icon" /><span>{{item.label}}</span>@if(item.path === '/agents' && workspace.agents().length) {<span class="nav-count">{{workspace.agents().length}}</span>}</a>
           }
         </nav>
         <div class="sidebar-bottom">
-          <div class="local-card"><span class="local-orbit"><app-icon name="shield" /></span><strong>Your space. Your agents.</strong><p>A local playground for ideas<br>and a little more possibility.</p><span class="local-tag"><span></span> LOCAL DEVELOPMENT</span></div>
-          <div class="profile"><span class="avatar">Y</span><span><strong>Your workspace</strong><small>Personal · Mock provider</small></span><a routerLink="/settings" aria-label="Workspace settings"><app-icon name="settings" /></a></div>
+          <div class="local-card"><span class="local-orbit"><app-icon name="shield" /></span><strong>Your space. Your agents.</strong><p>A local playground for ideas<br>and a little more possibility.</p><span class="local-tag"><span></span> {{workspace.runtimeConfig().mode === 'personal' ? 'PRIVATE DATA' : 'SYNTHETIC DEMO'}}</span></div>
+          <div class="profile"><span class="avatar">Y</span><span><strong>Your workspace</strong><small>{{workspace.runtimeConfig().mode === 'personal' ? 'Private PostgreSQL storage' : 'Demo · Mock provider'}}</small></span><a routerLink="/settings" aria-label="Workspace settings"><app-icon name="settings" /></a></div>
         </div>
       </aside>
       <div class="main-shell">
-        <header class="topbar"><div class="topbar-left"><button mat-icon-button class="mobile-menu" aria-label="Open navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(true)"><app-icon name="menu" /></button><span class="breadcrumb">Workspace <span>/</span> <strong>Personal</strong></span></div><div class="topbar-right"><span class="connection" [class.offline]="!workspace.online()"><i></i>{{workspace.loading() ? 'Connecting' : workspace.online() ? 'Backend connected' : 'Backend offline'}}</span><span class="demo-badge">MOCK MODE</span><span class="top-avatar" aria-label="Personal workspace">Y</span></div></header>
+        <header class="topbar"><div class="topbar-left"><button mat-icon-button class="mobile-menu" aria-label="Open navigation" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(true)"><app-icon name="menu" /></button><span class="breadcrumb">Workspace <span>/</span> <strong>{{workspace.runtimeConfig().mode === 'personal' ? 'Personal' : 'Demo'}}</strong></span></div><div class="topbar-right"><span class="connection" [class.offline]="!workspace.online()"><i></i>{{workspace.loading() ? 'Connecting' : workspace.online() ? 'Backend connected' : 'Backend offline'}}</span><span class="demo-badge">{{workspace.runtimeConfig().mode === 'personal' ? 'PERSONAL MODE' : 'DEMO MODE'}}</span><span class="top-avatar" aria-label="Personal workspace">Y</span></div></header>
         <main #mainContent id="main-content" tabindex="-1">
           @if (workspace.error()) { <div class="connection-alert" role="alert"><span>{{workspace.error()}}</span><button mat-button (click)="workspace.load()">Reconnect</button></div> }
           <router-outlet />

@@ -12,10 +12,11 @@ import { ApiService, errorMessage } from '../core/api.service';
 import { AIModel, GlobalModelSettings, ProviderStatus, UsageSummary } from '../core/models';
 import { WorkspaceService } from '../core/workspace.service';
 import { IconComponent } from '../shared/icon.component';
+import { ProviderPrivacyComponent } from '../shared/provider-privacy.component';
 
 @Component({
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, IconComponent],
+  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, IconComponent, ProviderPrivacyComponent],
   template: `
     <div class="page-title"><div><div class="eyebrow intro-label">THE DETAILS BEHIND YOUR WORKSPACE</div><h1>Your models, thoughtfully connected.</h1><p>Configure the models your agents can use, their defaults, and approximate usage.</p></div></div>
     @if(error()){<div class="error-message" role="alert">{{error()}}</div>}
@@ -33,7 +34,8 @@ import { IconComponent } from '../shared/icon.component';
       <div class="form-actions"><span class="section-note">Disable a model to retain existing agent and usage references.</span><button mat-flat-button type="submit" [disabled]="busy() || modelForm.invalid">{{busy() ? 'Saving…' : 'Save model'}}</button></div></form></div>
     </section>
     <section class="panel management-panel"><div class="panel-heading"><span class="setting-icon"><app-icon name="shield" /></span><div><h2>Approximate usage</h2><p>Per agent and model for this backend session. Estimates are not billing statements.</p></div></div><div class="usage-scroll"><table class="usage-table"><thead><tr><th>Agent / model</th><th>Requests</th><th>Tokens in / out</th><th>Estimated cost</th></tr></thead><tbody>@for(row of usage(); track $index){<tr><td><strong>{{row.agentId || 'Unassigned'}}</strong><small>{{row.modelId}} · {{row.providerId}}</small><small>{{row.mockRequests}} mock · {{row.requests - row.mockRequests}} API · {{row.failedRequests}} failed</small></td><td>{{row.requests}}</td><td>{{row.inputTokens === null ? 'Unknown' : row.inputTokens}} / {{row.outputTokens === null ? 'Unknown' : row.outputTokens}}</td><td>{{row.estimatedCost === null ? 'Unknown' : (row.estimatedCost | number:'1.2-8')}} {{row.currency || ''}}</td></tr>}@empty{<tr><td colspan="4">No usage recorded yet.</td></tr>}</tbody></table></div></section>
-    <p class="section-note persistence-note">Registry entries, agent settings, and usage currently live in backend memory and reset when it restarts. PostgreSQL persistence is planned.</p>
+    <app-provider-privacy [personal]="workspace.runtimeConfig().mode === 'personal'" />
+    <p class="section-note persistence-note">@if(workspace.runtimeConfig().persistent){Personal mode stores configurations, private rules, drafts, conversations, and usage in your private PostgreSQL database. Files use a separate directory outside the repository.}@else{Demo mode uses synthetic configurations and temporary backend memory. No personal database is connected.} Export downloads use your browser's selected destination; choose a private folder outside the repository.</p>
     <p class="save-notice" role="status">{{notice()}}</p><div class="settings-footer"><span>Shape each agent's defaults.</span><a routerLink="/agents">Configure your agents <app-icon name="arrow" /></a></div>
   `,
   styleUrl: './settings.component.scss'

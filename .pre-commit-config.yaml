@@ -1,0 +1,19 @@
+minimum_pre_commit_version: '4.0.0'
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: sai-private-staged
+        name: SAI staged privacy and Gitleaks audit
+        entry: node scripts/privacy-audit.mjs --staged
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+      - id: sai-private-push
+        name: SAI outgoing history privacy and Gitleaks audit
+        entry: node scripts/privacy-audit.mjs --pre-push
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

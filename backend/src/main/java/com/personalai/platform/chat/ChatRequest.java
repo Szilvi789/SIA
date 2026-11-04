@@ -15,12 +15,17 @@ public record ChatRequest(
         @Size(max = 20) String overrideTier,
         @Valid GenerationParameters parameters,
         Boolean allowFallback,
-        @Size(max = 120) String conversationId) {
+        @Size(max = 120) String conversationId,
+        @Valid com.personalai.platform.privacy.DataSharingConsent dataSharingConsent) {
+    public ChatRequest(String agentId, String modelId, String message, String tier, String overrideModelId,
+            String overrideTier, GenerationParameters parameters, Boolean allowFallback, String conversationId) {
+        this(agentId, modelId, message, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId, null);
+    }
     public ChatRequest(String agentId, String modelId, String message) {
         this(agentId, modelId, message, null, null, null, null, null, null);
     }
 
     public ModelSelection selection() {
-        return new ModelSelection(modelId, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId);
+        return new ModelSelection(modelId, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId, dataSharingConsent);
     }
 }

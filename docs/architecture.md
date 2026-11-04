@@ -1,5 +1,7 @@
 # Architecture
 
+Runtime storage now has two modes: demo uses synthetic in-memory repositories; personal uses the same repository interfaces backed by PostgreSQL, with Flyway migrations and an external mode-specific `SAI_DATA_DIR`. Personalized Markdown, drafts, conversations, configurations, metadata, and usage are private database records. Uploaded/export bytes and multipart temporary files stay in external private storage. `CloudDataSharingPolicy` gates external provider requests by locality, provider-specific permissions, and scoped request consent before adapter dispatch. See [Public source and private data](private-data.md). Historical references to in-memory storage below describe demo mode.
+
 SAI (Szilvi AI), currently presented in the UI as Agent Studio, is a local application for configuring task-specific agents, chat, and an integrated Writing & Communication workspace. Spring Boot and Angular retain their existing service and API boundaries. Rules, knowledge, and tools remain provider-independent foundations reused by writing. Responses remain explicitly labeled mock output, with agent configuration, presets, and drafts in memory.
 
 ## System boundaries
@@ -76,7 +78,7 @@ The detailed contracts, trust boundaries, and future integration sequence are de
 
 ## Frontend modules
 
-The shared `ModelSelectorComponent` displays configured models, tiers, providers, capabilities, and pricing. `WorkspaceService` stores separate conversation overrides; `WritingStateService` stores document-specific overrides. They send selection context to `ProviderExecutionService`, which resolves through `ModelResolver`, passes the actual model and validated parameters to the adapter, and returns execution metadata. Settings manages the existing registry rather than creating another catalog. Model, provider configuration, usage, and agent repositories remain temporary in-memory implementations; PostgreSQL integration is pending. See [Model management](models.md) for the complete contracts and limitations.
+The shared `ModelSelectorComponent` displays configured models, tiers, providers, capabilities, pricing, and request-scoped sharing consent. `WorkspaceService` stores conversation overrides and restores personal history; `WritingStateService` stores document-specific overrides. They send selection context to the shared provider execution boundary. Settings manages the existing registry and provider sharing permissions. Repositories use temporary demo memory or personal PostgreSQL. The browser binds requests to the discovered mode with `X-SAI-Mode`; a server filter rejects stale-mode requests before task processing. See [Model management](models.md) and [Private data](private-data.md).
 
 The standalone Angular application separates layout and views from typed API services. Angular Material supplies accessible interface primitives, while SCSS provides the application theme and responsive layout.
 

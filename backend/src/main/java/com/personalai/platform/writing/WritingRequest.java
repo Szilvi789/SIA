@@ -6,7 +6,7 @@ import com.personalai.platform.models.ModelSelection;
 public record WritingRequest(WritingWorkflow workflow, String input, String modelId,
         WritingPreferences preferences, EmailComposition email,
         String tier, String overrideModelId, String overrideTier, GenerationParameters parameters,
-        Boolean allowFallback, String conversationId) {
+        Boolean allowFallback, String conversationId, com.personalai.platform.privacy.DataSharingConsent dataSharingConsent) {
     public WritingRequest {
         workflow = workflow == null ? WritingWorkflow.GENERAL : workflow;
         input = WritingValidation.text(input, 12000, "input");
@@ -20,12 +20,18 @@ public record WritingRequest(WritingWorkflow workflow, String input, String mode
     }
 
     public WritingRequest(WritingWorkflow workflow, String input, String modelId,
+            WritingPreferences preferences, EmailComposition email, String tier, String overrideModelId,
+            String overrideTier, GenerationParameters parameters, Boolean allowFallback, String conversationId) {
+        this(workflow, input, modelId, preferences, email, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId, null);
+    }
+
+    public WritingRequest(WritingWorkflow workflow, String input, String modelId,
                           WritingPreferences preferences, EmailComposition email) {
         this(workflow, input, modelId, preferences, email, null, null, null, null, null, null);
     }
 
     public ModelSelection selection() {
-        return new ModelSelection(modelId, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId);
+        return new ModelSelection(modelId, tier, overrideModelId, overrideTier, parameters, allowFallback, conversationId, dataSharingConsent);
     }
 
     private static String optional(String value, int limit, String field) {

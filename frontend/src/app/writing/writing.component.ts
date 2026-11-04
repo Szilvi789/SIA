@@ -8,6 +8,8 @@ import { DocumentExportService } from './export/document-export.service';
 import { DocumentExportFormat } from './export/export.models';
 import { DEFAULT_PREFERENCES, GenerationPart, WritingDraft, WritingPreset, WritingWorkflow } from './writing.models';
 import { WritingStateService } from './writing-state.service';
+import { WritingApiService } from './writing-api.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -20,6 +22,7 @@ export class WritingComponent {
   readonly workspace = inject(WorkspaceService);
   readonly writingAgent = computed(() => this.workspace.agents().find(agent => agent.id === 'writing-agent'));
   private readonly exports = inject(DocumentExportService);
+  private readonly writingApi = inject(WritingApiService);
   readonly section = signal<'workspace' | 'drafts' | 'presets' | 'preview'>('workspace');
   readonly exporting = signal(false);
   readonly exportError = signal('');
@@ -86,6 +89,10 @@ export class WritingComponent {
         title: doc.title || this.workflowLabel(), content: doc.content,
         ...(doc.workflow === 'EMAIL' ? { subject: doc.subject } : {})
       });
+      if (this.workspace.runtimeConfig().persistent) {
+        // A durable copy is written to guarded private storage before browser-controlled downloads.
+        for (const artifact of artifacts) await firstValueFrom(this.writingApi.storeExport(artifact.blob, artifact.filename, this.exportFormat));
+      }
       for (const artifact of artifacts) {
         const url = URL.createObjectURL(artifact.blob);
         const link = document.createElement('a');
@@ -96,7 +103,8 @@ export class WritingComponent {
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
-      this.localStatus.set(artifacts.length > 1 ? `${artifacts.length} document pages exported.` : 'Latest edited document exported.');
+      this.localStatus.set(this.workspace.runtimeConfig().persistent ? 'Document saved in private generated-file storage and downloaded.'
+        : artifacts.length > 1 ? `${artifacts.length} document pages exported.` : 'Latest edited document exported.');
     } catch (error: unknown) {
       this.exportError.set(error instanceof Error ? error.message : 'Export could not be completed. Please try another format.');
     } finally { this.exporting.set(false); }

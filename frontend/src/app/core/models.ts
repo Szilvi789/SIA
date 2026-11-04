@@ -60,6 +60,7 @@ export interface AgentModelSettings {
 }
 
 export interface ModelSelection {
+  dataSharingConsent?: DataSharingConsent | null;
   modelId?: string | null;
   tier?: string | null;
   overrideModelId?: string | null;
@@ -70,7 +71,11 @@ export interface ModelSelection {
 }
 
 export interface GlobalModelSettings { defaultModelId: string | null; tierMappings: Record<string, string> }
-export interface ProviderStatus { id: string; name: string; enabled: boolean; adapterAvailable: boolean; configured: boolean; mock: boolean }
+export interface ProviderStatus { id: string; name: string; enabled: boolean; adapterAvailable: boolean; configured: boolean; mock: boolean; dataLocality?: 'LOCAL' | 'EXTERNAL' | 'UNKNOWN' }
+export interface RuntimeConfig { mode: 'demo' | 'personal'; persistent: boolean; dataStorage: 'external'; cloudRequestsMayLeaveDevice: boolean }
+export interface DataSharingConsent { providerId: string; taskContent: boolean; personalInstructions: boolean; knowledgeSourceIds: string[] }
+export interface ProviderDataPermission { providerId: string; enabled: boolean; taskContent: boolean; personalInstructions: boolean; knowledgePassages: boolean }
+export interface Conversation { id: string; agentId: string; messages: Message[]; updatedAt: string }
 export interface ResolvedModelMetadata {
   providerId?: string;
   source?: string;
@@ -99,6 +104,6 @@ export interface UsageSummary {
   inputTokens: number | null; outputTokens: number | null; estimatedCost: number | null; currency: string | null;
 }
 export interface ChatRequest extends ModelSelection { agentId: string; message: string }
-export interface ChatResponse extends ResolvedModelMetadata { id: string; agentId: string; modelId: string; content: string; createdAt: string }
+export interface ChatResponse extends ResolvedModelMetadata { id: string; agentId: string; modelId: string; content: string; createdAt: string; conversationId?: string }
 export interface Health { status: string; provider: string }
 export interface Message extends ResolvedModelMetadata { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; modelId?: string }

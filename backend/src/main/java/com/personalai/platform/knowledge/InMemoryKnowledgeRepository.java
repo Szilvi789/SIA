@@ -6,9 +6,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.springframework.stereotype.Repository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /** Empty on startup; this repository stores metadata only, with no document ingestion. */
 @Repository
+@ConditionalOnProperty(name = "sai.mode", havingValue = "demo", matchIfMissing = true)
 public class InMemoryKnowledgeRepository implements KnowledgeRepository {
     private final ConcurrentMap<String, KnowledgeSource> sources = new ConcurrentHashMap<>();
 

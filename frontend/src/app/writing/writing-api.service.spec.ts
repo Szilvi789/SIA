@@ -17,6 +17,16 @@ describe('WritingApiService', () => {
   });
   afterEach(() => http.verify());
 
+  it('sends generated export bytes to private server storage without a filesystem path', () => {
+    api.storeExport(new Blob(['Synthetic exported text'], { type: 'text/plain' }), 'synthetic.txt', 'TXT').subscribe();
+    const request = http.expectOne('/custom-api/writing/exports');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body instanceof FormData).toBe(true);
+    expect(request.request.body.get('format')).toBe('TXT');
+    expect(request.request.body.get('file').name).toBe('synthetic.txt');
+    request.flush({ id: 'opaque-id', format: 'TXT' });
+  });
+
   it('uses the configured API root for options and drafts', () => {
     api.options().subscribe(options => expect(options.capabilities.sending).toBe(false));
     http.expectOne('/custom-api/writing/options').flush(writingOptions());

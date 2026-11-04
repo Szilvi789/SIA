@@ -38,8 +38,8 @@ class ProviderExecutionServiceTest {
         assertThat(result.metadata().fallbackUsed()).isTrue();
         assertThat(primary.calls).isEqualTo(1);
         assertThat(fallback.calls).isEqualTo(1);
-        assertThat(usage.findAll()).extracting(record -> record.status()).containsExactly("SUCCESS", "FAILED");
-        assertThat(usage.findAll().getFirst().estimatedCost()).isEqualByComparingTo("0.00003");
+        assertThat(usage.findAll()).extracting(record -> record.status()).containsExactlyInAnyOrder("SUCCESS", "FAILED");
+        assertThat(usage.findAll().stream().filter(record -> "SUCCESS".equals(record.status())).findFirst().orElseThrow().estimatedCost()).isEqualByComparingTo("0.00003");
     }
 
     @Test void requestCanForbidSavedFallbackAndCannotGrantUnsavedPermission() {
@@ -112,6 +112,9 @@ class ProviderExecutionServiceTest {
         Adapter(String id) { this.id = id; }
         @Override public String id() { return id; }
         @Override public boolean configured() { return true; }
+        @Override public com.personalai.platform.privacy.DataLocality dataLocality() {
+            return com.personalai.platform.privacy.DataLocality.LOCAL;
+        }
         @Override public String generate(ProviderRequest request) { calls++; return response.get(); }
         @Override public ProviderResult generateResult(ProviderRequest request) {
             return new ProviderResult(generate(request), new ProviderUsage(10L, 10L, 0L));

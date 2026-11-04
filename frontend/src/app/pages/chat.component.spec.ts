@@ -34,6 +34,7 @@ describe('ChatComponent', () => {
       id: 'mock-balanced', name: 'Mock Balanced', providerId: 'mock', description: 'Demo model'
     }]);
     http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {}});
+    http.expectOne('/api/runtime-config').flush({mode:'demo',persistent:false,dataStorage:'external',cloudRequestsMayLeaveDevice:true});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
   });
 

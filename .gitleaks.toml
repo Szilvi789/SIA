@@ -1,0 +1,6 @@
+title = "SAI public-source secret detection"
+
+[extend]
+useDefault = true
+
+# No blanket path allowlists or baseline: source, examples, and history are scanned.

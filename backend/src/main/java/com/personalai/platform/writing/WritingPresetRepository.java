@@ -7,4 +7,7 @@ public interface WritingPresetRepository {
     List<WritingPreset> findAll();
     Optional<WritingPreset> findById(String id);
     WritingPreset save(WritingPreset preset);
+    default WritingPreset saveDefaultIfAbsent(WritingPreset preset) {
+        return findById(preset.id()).orElseGet(() -> save(preset));
+    }
 }

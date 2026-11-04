@@ -25,7 +25,7 @@ describe('AgentsComponent', () => {
         { provide: ApiService, useValue: { updateAgent } },
         { provide: WorkspaceService, useValue: {
           agents, models: signal([{ id: 'mock-balanced', name: 'Mock Balanced', providerId: 'mock', description: 'Balanced demo responses' }]),
-          loading: signal(false), online: signal(true), selectAgent: vi.fn(),
+          runtimeConfig: signal({ mode: 'demo', persistent: false }), loading: signal(false), online: signal(true), selectAgent: vi.fn(),
           replaceAgent: (updated: Agent) => agents.set([updated])
         } }
       ]
@@ -67,7 +67,7 @@ describe('AgentsComponent', () => {
     expect(component.form.enabled).toBe(true);
     expect(component.form.pristine).toBe(true);
     expect(component.saved()).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Changes saved for this backend session.');
+    expect(fixture.nativeElement.textContent).toContain('Changes saved for this demo session.');
     expect(fixture.nativeElement.querySelector('h2').textContent).toContain('My coding helper');
   });
 

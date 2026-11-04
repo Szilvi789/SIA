@@ -1,5 +1,7 @@
 # Writing & Communication
 
+Storage is mode-specific: demo drafts/presets are temporary; personal drafts and user-owned Markdown persist in private PostgreSQL. Personal exports also retain a copy under the external private generated directory before browser download. Cloud request consent is separate from email delivery authorization. See [Public source and private data](private-data.md); in-memory descriptions below apply to demo mode.
+
 Phase 1 adds one integrated writing agent to the existing SAI application. It uses the same agent configuration, rule repository, knowledge boundary, tool registry, model catalog, and interchangeable `AIProvider` interface as chat. It does not create seven separate agents or require a live AI/email account.
 
 ## Implemented workspace

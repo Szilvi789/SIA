@@ -11,11 +11,11 @@ import { WorkspaceService } from '../core/workspace.service';
 describe('SettingsComponent model management', () => {
   const model: AIModel = {id: 'demo', providerId: 'mock', apiModelId: 'demo-api', name: 'Demo', description: 'Local model', enabled: true, capabilities: null, supportedParameters: null};
   const settings: GlobalModelSettings = {defaultModelId: 'demo', tierMappings: {BALANCED: 'demo'}};
-  let api: {models: ReturnType<typeof vi.fn>; providers: ReturnType<typeof vi.fn>; modelSettings: ReturnType<typeof vi.fn>; usageSummary: ReturnType<typeof vi.fn>; updateModel: ReturnType<typeof vi.fn>; updateModelSettings: ReturnType<typeof vi.fn>; updateProvider: ReturnType<typeof vi.fn>};
+  let api: {models: ReturnType<typeof vi.fn>; providers: ReturnType<typeof vi.fn>; modelSettings: ReturnType<typeof vi.fn>; usageSummary: ReturnType<typeof vi.fn>; updateModel: ReturnType<typeof vi.fn>; updateModelSettings: ReturnType<typeof vi.fn>; updateProvider: ReturnType<typeof vi.fn>; providerDataPermissions: ReturnType<typeof vi.fn>};
 
   beforeEach(async () => {
-    api = {models: vi.fn(() => of([model])), providers: vi.fn(() => of([{id: 'mock', name: 'Mock', enabled: true, configured: true, adapterAvailable: true, mock: true}])), modelSettings: vi.fn(() => of(settings)), usageSummary: vi.fn(() => of([])), updateModel: vi.fn((_id: string, saved: AIModel) => of(saved)), updateModelSettings: vi.fn((saved: GlobalModelSettings) => of(saved)), updateProvider: vi.fn()};
-    await TestBed.configureTestingModule({imports: [SettingsComponent], providers: [provideRouter([]), {provide: ApiService, useValue: api}, {provide: WorkspaceService, useValue: {models: signal<AIModel[]>([]), modelSettings: signal(settings), online: signal(true)}}]}).compileComponents();
+    api = {models: vi.fn(() => of([model])), providers: vi.fn(() => of([{id: 'mock', name: 'Mock', enabled: true, configured: true, adapterAvailable: true, mock: true}])), modelSettings: vi.fn(() => of(settings)), usageSummary: vi.fn(() => of([])), updateModel: vi.fn((_id: string, saved: AIModel) => of(saved)), updateModelSettings: vi.fn((saved: GlobalModelSettings) => of(saved)), updateProvider: vi.fn(), providerDataPermissions: vi.fn(() => of([]))};
+    await TestBed.configureTestingModule({imports: [SettingsComponent], providers: [provideRouter([]), {provide: ApiService, useValue: api}, {provide: WorkspaceService, useValue: {models: signal<AIModel[]>([]), modelSettings: signal(settings), online: signal(true), runtimeConfig: signal({mode: 'demo', persistent: false})}}]}).compileComponents();
   });
 
   it('retains unknown metadata and prices when saving an existing model', () => {

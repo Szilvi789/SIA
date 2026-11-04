@@ -31,6 +31,50 @@ describe('WorkspaceService', () => {
 
   afterEach(() => http.verify());
 
+  it('restores personal conversation history from the backend while leaving demo history temporary', () => {
+    http.expectOne('/api/agents').flush([coding]);
+    http.expectOne('/api/models').flush(models);
+    http.expectOne('/api/model-settings').flush({ defaultModelId: 'mock-balanced', tierMappings: {} });
+    http.expectOne('/api/runtime-config').flush({ mode: 'personal', persistent: true, dataStorage: 'external', cloudRequestsMayLeaveDevice: true });
+    http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
+    expect(workspace.loading()).toBe(true);
+    http.expectOne('/api/conversations').flush([
+      { id: 'older', agentId: coding.id, updatedAt: '2026-01-01T00:00:00Z', messages: [{ id: 'one', role: 'user', content: 'Synthetic earlier task', createdAt: '2026-01-01T00:00:00Z' }] },
+      { id: 'newer', agentId: coding.id, updatedAt: '2026-02-01T00:00:00Z', messages: [{ id: 'two', role: 'user', content: 'Synthetic latest task', createdAt: '2026-02-01T00:00:00Z' }] }
+    ]);
+    expect(workspace.loading()).toBe(false);
+    expect(workspace.selectedConversationId()).toBe('newer');
+    expect(workspace.conversations()[coding.id][0].content).toBe('Synthetic latest task');
+    workspace.openConversation('older');
+    expect(workspace.conversations()[coding.id][0].content).toBe('Synthetic earlier task');
+    workspace.clearConversation();
+    expect(workspace.savedConversations()).toHaveLength(2);
+    expect(workspace.selectedConversationId()).toBe('');
+    http.expectNone(request => request.method === 'DELETE');
+  });
+
+  it('does not load a personal conversation store in demo mode', () => {
+    finishLoad();
+    http.expectNone('/api/conversations');
+    expect(workspace.runtimeConfig().persistent).toBe(false);
+  });
+
+  it('blocks a backend mode switch without discarding unsaved browser content', () => {
+    finishLoad();
+    workspace.setDraft('Synthetic unsaved task');
+    workspace.load();
+    http.expectOne('/api/agents').flush([coding]);
+    http.expectOne('/api/models').flush(models);
+    http.expectOne('/api/model-settings').flush({ defaultModelId: 'mock-balanced', tierMappings: {} });
+    http.expectOne('/api/runtime-config').flush({ mode: 'personal', persistent: true, dataStorage: 'external', cloudRequestsMayLeaveDevice: true });
+    http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
+    expect(workspace.online()).toBe(false);
+    expect(workspace.runtimeConfig().mode).toBe('demo');
+    expect(workspace.drafts()[coding.id]).toBe('Synthetic unsaved task');
+    expect(workspace.error()).toContain('backend mode changed');
+    http.expectNone('/api/conversations');
+  });
+
   it('keeps model overrides within a conversation and resolves defaults on the backend', () => {
     finishLoad();
     workspace.selectModel({ overrideModelId: 'mock-precise' });
@@ -65,6 +109,7 @@ describe('WorkspaceService', () => {
     http.expectOne('/api/agents').flush(agents);
     http.expectOne('/api/models').flush(availableModels);
     http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
+    http.expectOne('/api/runtime-config').flush({mode:'demo',persistent:false,dataStorage:'external',cloudRequestsMayLeaveDevice:true});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
   }
 
@@ -79,6 +124,7 @@ describe('WorkspaceService', () => {
     http.expectOne('/api/models').flush(models);
     expect(workspace.loading()).toBe(true);
     http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
+    http.expectOne('/api/runtime-config').flush({mode:'demo',persistent:false,dataStorage:'external',cloudRequestsMayLeaveDevice:true});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
 
     expect(workspace.loading()).toBe(false);
@@ -92,6 +138,7 @@ describe('WorkspaceService', () => {
     http.expectOne('/api/agents').flush([coding]);
     http.expectOne('/api/models').flush(models);
     http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
+    http.expectOne('/api/runtime-config').flush({mode:'demo',persistent:false,dataStorage:'external',cloudRequestsMayLeaveDevice:true});
     http.expectOne('/api/health').error(new ProgressEvent('error'));
 
     expect(workspace.loading()).toBe(false);

@@ -53,11 +53,11 @@ There is no API-key input or credential endpoint. Future adapters should read ke
 
 `AIProvider.generateResult` adds nullable provider usage while preserving existing `generate` adapters. A future adapter uses `request.model().apiModelId()` and `request.parameters()`, translates supported parameters, preserves the separate instruction/input/knowledge channels, and reports actual usage. Model declarations never replace adapter-specific API validation.
 
-## Storage and PostgreSQL follow-up
+## Storage by runtime mode
 
-Repository inspection found no PostgreSQL implementation, datasource, JPA/JDBC dependency, or Flyway migrations. This feature therefore uses the existing architecture with clearly labeled temporary repositories: `InMemoryModelRepository`, `InMemoryProviderConfigurationRepository`, and `InMemoryUsageRepository`, alongside the existing agent repository. All registry/default/tier/provider/usage changes reset on backend restart. No existing data is migrated or erased at feature startup.
+Demo mode uses the temporary in-memory repositories and requires no database. Personal mode replaces the same repository interfaces with PostgreSQL implementations, additive Flyway migrations, private credential-file configuration, and a persistent Docker volume outside the checkout. Models, provider flags, defaults, tiers, usage snapshots, agent configuration, private rules, drafts, and conversations survive personal-mode restarts. Synthetic seeds never overwrite user edits.
 
-PostgreSQL is the intended durable store. Future work should replace these repository implementations, reuse the eventual shared datasource, and introduce additive Flyway migrations for models, provider metadata (without raw credentials), agent model settings, application/agent tier mappings, and timestamped usage/pricing snapshots. Do not introduce a separate database just for this feature. Conversation IDs currently correlate usage; they do not implement a persisted multi-turn conversation service.
+Personal filesystem data uses an external `SAI_DATA_DIR` base with a separate mode directory. Provider-specific data-sharing permission and per-request consent are required for future cloud adapters; local retrieval does not authorize external transmission. See [Public source and private data](private-data.md) for setup, migration between Windows/macOS, and boundaries. Saved conversation history does not automatically become a multi-turn provider prompt.
 
 ## API examples
 

@@ -54,4 +54,21 @@ describe('ModelSelectorComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Estimated cost unknown');
   });
+
+  it('binds cloud consent to the current provider and explicit knowledge sources', () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('agent', { ...agent, knowledgeSourceIds: ['synthetic-source'] });
+    fixture.componentRef.setInput('selection', { overrideModelId: 'other' });
+    fixture.detectChanges();
+    const selections: ModelSelection[] = [];
+    fixture.componentInstance.selectionChange.subscribe(selection => selections.push(selection));
+    expect(fixture.nativeElement.textContent).toContain('Local retrieval alone does not authorize cloud sharing');
+    fixture.componentInstance.authorizeTask('local', true);
+    expect(selections[0].dataSharingConsent).toEqual({ providerId: 'local', taskContent: true, personalInstructions: true, knowledgeSourceIds: [] });
+    fixture.componentRef.setInput('selection', selections[0]);
+    fixture.componentInstance.authorizeKnowledge('local', true);
+    expect(selections[1].dataSharingConsent?.knowledgeSourceIds).toEqual(['synthetic-source']);
+    fixture.componentInstance.choose('default');
+    expect(selections[2].dataSharingConsent).toBeUndefined();
+  });
 });

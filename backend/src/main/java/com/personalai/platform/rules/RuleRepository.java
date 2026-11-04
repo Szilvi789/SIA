@@ -13,4 +13,9 @@ public interface RuleRepository {
     default RuleDocument saveUserOwned(RuleDocument rule) {
         throw new UnsupportedOperationException("This repository does not support editable rules.");
     }
+
+    /** Seeds only public starter text; private repositories retain any previously saved rule. */
+    default RuleDocument saveDefaultIfAbsent(RuleDocument rule) {
+        return findById(rule.id()).orElseGet(() -> saveUserOwned(rule));
+    }
 }

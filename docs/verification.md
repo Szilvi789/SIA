@@ -1,5 +1,22 @@
 # Implementation verification
 
+## Public repository and private data separation — 2026-11-04
+
+| Check | Result |
+| --- | --- |
+| Backend Maven `verify` | Passed: 211 discovered, 205 passed, 6 skipped; executable JAR packaged. Four skips require Windows symlink privileges; two are opt-in live PostgreSQL cases run separately below. |
+| Live PostgreSQL 17.11 | Both integration tests passed against an isolated synthetic-only database: repository/pool restart, full personal application shutdown/restart, exact personalized Markdown/draft retention, synthetic seed preservation, revision conflicts, private history/permission storage. |
+| Frontend tests and production build | 101 tests passed across 13 files; production build passed. Includes mode-change blocking, restored personal history, request consent, private-export transport, and existing writing/export functionality. |
+| Local privacy protections | 20 tests passed using real pinned Gitleaks; pre-commit and pre-push hooks installed. Full tracked/index/worktree/history audit completed with zero findings. |
+| Clean public source startup | Isolated local clone plus the current public working-copy overlay rebuilt and passed demo startup without database credentials, datasource, private files, dependency directories, or cached application artifacts in that clone. Changes remained uncommitted. |
+| Storage and configuration | Tests cover external defaults, absolute-path validation, mode namespaces, worktrees/repository containment, opaque identifiers, bounded validated file bytes, private multipart locations, cloud locality/permission/source consent, and loopback enforcement. |
+
+Verification used Windows, JDK 22.0.2 targeting release 21, Node.js 22.13.0, cached Maven 3.9.9, Docker PostgreSQL 17.11, Gitleaks 8.30.1, and pre-commit 4.7.0. Dependency downloads used normal TLS verification through the existing proxy/trusted Windows roots. No commits, pushes, history rewrites, or existing application-data deletions were performed. The stopped synthetic validation container/volume was retained as `sai-privacy-validation-872e60a8bfdb`; its temporary clone and credential file were also retained. Docker Desktop remains running after validation.
+
+Managed Windows policy denied ACL changes; owner restriction falls back to inherited ACLs with a generic warning. Four filesystem symlink tests could not run under this account. Actual macOS execution and Java 21 runtime remain unverified. Secret scans cannot reliably identify all unmarked personal prose; local hooks can be deliberately bypassed. Personal API access is loopback-only and unauthenticated; browser downloads require a private Save As destination. Real AI/email adapters and automated backups remain future integrations. See [Private data](private-data.md) and [Privacy audit](privacy-audit.md).
+
+The following sections retain earlier implementation results.
+
 ## Model management and runtime selection — 2026-11-04
 
 | Check | Result |

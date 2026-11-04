@@ -12,6 +12,10 @@ export class WritingApiService {
   options(): Observable<WritingOptions> { return this.http.get<WritingOptions>(`${this.baseUrl}/options`); }
   generate(request: WritingRequest): Observable<WritingResult> { return this.http.post<WritingResult>(`${this.baseUrl}/generate`, request); }
   drafts(): Observable<WritingDraft[]> { return this.http.get<WritingDraft[]>(`${this.baseUrl}/drafts`); }
+  storeExport(blob: Blob, filename: string, format: string): Observable<{id: string; format: string}> {
+    const form = new FormData(); form.append('file', blob, filename); form.append('format', format);
+    return this.http.post<{id: string; format: string}>(`${this.baseUrl}/exports`, form);
+  }
   saveDraft(draft: WritingDraft): Observable<WritingDraft> {
     return draft.id
       ? this.http.put<WritingDraft>(`${this.baseUrl}/drafts/${encodeURIComponent(draft.id)}`, draft)

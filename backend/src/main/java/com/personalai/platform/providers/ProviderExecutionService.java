@@ -6,6 +6,8 @@ import com.personalai.platform.models.ModelResolver;
 import com.personalai.platform.models.ModelSelection;
 import com.personalai.platform.models.ResolvedModel;
 import com.personalai.platform.usage.UsageService;
+import com.personalai.platform.privacy.CloudDataSharingPolicy;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,8 +19,13 @@ public class ProviderExecutionService {
     private final ModelResolver resolver;
     private final ProviderRegistry providers;
     private final UsageService usage;
+    private final CloudDataSharingPolicy dataSharing;
     public ProviderExecutionService(ModelResolver resolver, ProviderRegistry providers, UsageService usage) {
-        this.resolver = resolver; this.providers = providers; this.usage = usage;
+        this(resolver, providers, usage, CloudDataSharingPolicy.denyExternalByDefault(providers));
+    }
+    @Autowired
+    public ProviderExecutionService(ModelResolver resolver, ProviderRegistry providers, UsageService usage, CloudDataSharingPolicy dataSharing) {
+        this.resolver = resolver; this.providers = providers; this.usage = usage; this.dataSharing = dataSharing;
     }
     public ExecutionResult execute(Agent agent, ModelSelection selection, Set<String> requiredCapabilities,
             String workflow, Function<ResolvedModel, ProviderRequest> requestFactory) {
@@ -52,6 +59,7 @@ public class ProviderExecutionService {
             var tools = original.availableTools().stream().filter(tool -> allowedTools == null || allowedTools.contains(tool.id())).toList();
             var request = new ProviderRequest(agent, resolved.model(), original.message(), original.instructions(),
                     original.knowledgeContext(), tools, original.writingContext(), resolved.parameters());
+            dataSharing.validate(provider, request, selection.dataSharingConsent());
             try { result = provider.generateResult(request); }
             catch (ProviderUnavailableException exception) { throw exception; }
             catch (RuntimeException exception) { throw new InvalidConfigurationException("The provider could not complete generation. Check the server-side adapter configuration."); }

@@ -1,0 +1,29 @@
+# Only personal mode uses this database. Docker stores the named volume outside the checkout.
+# SAI_DB_PASSWORD_FILE must name a private UTF-8 file outside the repository.
+name: sai-personal
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sai_personal
+      POSTGRES_USER: sai_personal
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "127.0.0.1:${SAI_DB_PORT:-5433}:5432"
+    volumes:
+      - personal_postgres:/var/lib/postgresql/data
+    secrets:
+      - database_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sai_personal -d sai_personal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+secrets:
+  database_password:
+    file: ${SAI_DB_PASSWORD_FILE:?Set SAI_DB_PASSWORD_FILE to a private file outside the repository}
+volumes:
+  personal_postgres:
+    name: sai-personal-postgres-data

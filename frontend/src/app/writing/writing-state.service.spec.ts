@@ -14,7 +14,7 @@ describe('WritingStateService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), provideHttpClientTesting(),
-      { provide: WorkspaceService, useValue: { selectedModelId: signal('mock-precise'), agents: signal([{id: 'writing-agent', modelId: 'mock-balanced'}]), modelSettings: signal({defaultModelId: 'mock-balanced', tierMappings: {}}) } }
+      { provide: WorkspaceService, useValue: { online: signal(true), runtimeConfig: signal({mode: 'demo', persistent: false}), selectedModelId: signal('mock-precise'), agents: signal([{id: 'writing-agent', modelId: 'mock-balanced'}]), modelSettings: signal({defaultModelId: 'mock-balanced', tierMappings: {}}) } }
     ] });
     http = TestBed.inject(HttpTestingController);
     state = TestBed.inject(WritingStateService);
@@ -24,6 +24,15 @@ describe('WritingStateService', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('requires renewed cloud consent when task content changes', () => {
+    state.updateField('input', 'Synthetic task');
+    state.selectModel({ overrideModelId: 'mock-precise', dataSharingConsent: { providerId: 'openai', taskContent: true, personalInstructions: true, knowledgeSourceIds: [] } });
+    expect(state.modelSelection().dataSharingConsent?.providerId).toBe('openai');
+    state.updateField('input', 'Different synthetic task');
+    expect(state.modelSelection().dataSharingConsent).toBeUndefined();
+    expect(state.modelSelection().overrideModelId).toBe('mock-precise');
+  });
 
   it('passes a task tier override to generation and restores the agent default without saving it', () => {
     state.updateField('input', 'Write a short introduction');

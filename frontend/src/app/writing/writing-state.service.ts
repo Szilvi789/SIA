@@ -29,7 +29,7 @@ export class WritingStateService {
   readonly previewing = signal(false);
   readonly instructionPreview = signal<InstructionPreview | null>(null);
   readonly document = computed(() => this.documents()[this.workflow()] ?? newWritingDocument(this.workflow(), '', this.options().accounts[0]?.id));
-  readonly modelSelection = computed<ModelSelection>(() => ({ modelId: this.document().modelId || undefined, overrideModelId: this.document().overrideModelId, overrideTier: this.document().overrideTier }));
+  readonly modelSelection = computed<ModelSelection>(() => ({ modelId: this.document().modelId || undefined, overrideModelId: this.document().overrideModelId, overrideTier: this.document().overrideTier, dataSharingConsent: this.document().dataSharingConsent }));
   readonly generating = computed(() => this.pending() !== null);
   readonly locked = computed(() => this.pending()?.workflow === this.workflow());
   readonly availablePresets = computed(() => this.options().presets.filter(preset => preset.enabled && (preset.workflow === 'GENERAL' || preset.workflow === this.workflow())));
@@ -70,7 +70,7 @@ export class WritingStateService {
   }
 
   selectModel(selection: ModelSelection): void {
-    if (!this.locked()) this.edit({ modelId: '', overrideModelId: selection.overrideModelId, overrideTier: selection.overrideTier });
+    if (!this.locked()) this.edit({ modelId: selection.modelId || '', overrideModelId: selection.overrideModelId, overrideTier: selection.overrideTier, dataSharingConsent: selection.dataSharingConsent });
   }
 
   updatePreferences(patch: Partial<WritingPreferences>): void {
@@ -111,7 +111,7 @@ export class WritingStateService {
   }
 
   generate(part: GenerationPart = 'COMPLETE', replacementConfirmed = false): void {
-    if (this.generating() || !this.document().input.trim() || (this.requiresReplacementConfirmation(part) && !replacementConfirmed)) return;
+    if (!this.workspace.online() || this.generating() || !this.document().input.trim() || (this.requiresReplacementConfirmation(part) && !replacementConfirmed)) return;
     const snapshot = structuredClone(this.document());
     const id = ++this.requestSequence;
     const request = this.request(snapshot, part);
@@ -132,13 +132,17 @@ export class WritingStateService {
             detectedLanguage: result.detectedLanguage, appliedRuleIds: result.appliedRuleIds, lastExecution: result.execution,
             manualContent: part === 'SUBJECT' ? current.manualContent : false,
             manualSubject: part === 'BODY' ? current.manualSubject : false,
-            dirty: true, editVersion: current.editVersion + 1
+            dataSharingConsent: undefined, dirty: true, editVersion: current.editVersion + 1
           });
           this.status.set(`${result.mock ? 'Mock draft' : 'Draft'} generated${result.modelId ? ' with ' + result.providerId + ' / ' + result.modelId : ''}. Review and edit before using it.`);
         }
         this.pending.set(null);
       },
-      error: (error: unknown) => { if (this.pending()?.id === id) { this.pending.set(null); this.error.set(errorMessage(error)); } }
+      error: (error: unknown) => { if (this.pending()?.id === id) {
+        const current = this.documents()[snapshot.workflow] ?? snapshot;
+        this.setDocument(snapshot.workflow, { ...current, dataSharingConsent: undefined });
+        this.pending.set(null); this.error.set(errorMessage(error));
+      } }
     });
   }
 
@@ -160,7 +164,7 @@ export class WritingStateService {
           });
         }
         this.saving.set(false);
-        this.status.set('Draft saved for this backend session.');
+        this.status.set(this.workspace.runtimeConfig().persistent ? 'Draft saved in your private database.' : 'Draft saved for this backend session.');
       },
       error: (error: unknown) => { this.saving.set(false); this.error.set(errorMessage(error)); }
     });
@@ -175,7 +179,7 @@ export class WritingStateService {
     this.setDocument(draft.workflow, {
       ...newWritingDocument(draft.workflow), ...structuredClone(draft),
       dirty: false, editVersion: 0, manualContent: !!draft.content, manualSubject: !!draft.subject,
-      detectedLanguage: null, appliedRuleIds: []
+      detectedLanguage: null, appliedRuleIds: [], dataSharingConsent: undefined
     });
     this.workflow.set(draft.workflow);
     this.error.set('');
@@ -192,7 +196,7 @@ export class WritingStateService {
       next: saved => {
         this.options.update(options => ({ ...options, presets: [...options.presets.filter(item => item.id !== saved.id), saved] }));
         this.presetSaving.set(false);
-        this.status.set('Writing preset saved for this backend session.');
+        this.status.set(this.workspace.runtimeConfig().persistent ? 'Writing preset saved in your private database.' : 'Writing preset saved for this backend session.');
         this.instructionPreview.set(null);
         onSaved?.(saved);
       },
@@ -213,14 +217,16 @@ export class WritingStateService {
   private request(doc: WritingDocument, part: GenerationPart = 'COMPLETE'): WritingRequest {
     return {
       workflow: doc.workflow, input: doc.input, modelId: doc.modelId, overrideModelId: doc.overrideModelId,
-      overrideTier: doc.overrideTier, conversationId: doc.conversationId, preferences: structuredClone(doc.preferences),
+      overrideTier: doc.overrideTier, conversationId: doc.conversationId, dataSharingConsent: doc.dataSharingConsent, preferences: structuredClone(doc.preferences),
       email: { ...doc.email, subject: doc.subject, body: doc.content, generationPart: part }
     };
   }
 
   private edit(patch: Partial<WritingDocument>): void {
     const current = this.document();
-    this.setDocument(current.workflow, { ...current, ...patch, dirty: true, editVersion: current.editVersion + 1 });
+    this.setDocument(current.workflow, { ...current, ...patch,
+      dataSharingConsent: Object.hasOwn(patch, 'dataSharingConsent') ? patch.dataSharingConsent : undefined,
+      dirty: true, editVersion: current.editVersion + 1 });
     this.status.set('');
   }
 
@@ -235,7 +241,7 @@ export class WritingStateService {
       ? agent?.modelSettings?.tierMappings[tier] || this.workspace.modelSettings().tierMappings[tier] || ''
       : agent?.modelId || this.workspace.modelSettings().defaultModelId || '');
     return {
-      ...this.request(doc, doc.email.generationPart), modelId, id: doc.id, title: doc.title.trim() || 'Untitled document',
+      ...this.request(doc, doc.email.generationPart), dataSharingConsent: undefined, modelId, id: doc.id, title: doc.title.trim() || 'Untitled document',
       content: doc.content, subject: doc.subject, status: 'DRAFT', revision: doc.revision, updatedAt: doc.updatedAt
     };
   }

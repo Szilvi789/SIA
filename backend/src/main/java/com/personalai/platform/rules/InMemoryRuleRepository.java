@@ -11,9 +11,11 @@ import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
 import com.personalai.platform.common.InvalidConfigurationException;
 import org.springframework.stereotype.Repository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /** Loads only packaged, explicitly allowlisted rules; request data never supplies a path. */
 @Repository
+@ConditionalOnProperty(name = "sai.mode", havingValue = "demo", matchIfMissing = true)
 public class InMemoryRuleRepository implements RuleRepository {
     private final Map<String, RuleDocument> rules;
 

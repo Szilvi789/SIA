@@ -4,6 +4,19 @@ A personal AI agent platform with chat, configurable agents, and an integrated W
 
 The repository is rooted directly in this folder.
 
+## Public demo and private personal use
+
+The default **demo mode** starts from a public clone with synthetic configurations, temporary memory, and the mock provider; no database or credentials are required. **Personal mode** uses private PostgreSQL persistence and a separate external `SAI_DATA_DIR` directory. Personalized rules, saved drafts, conversation history, configurations, usage, uploaded bytes, and generated exports stay out of Git. Cloud API content sharing requires provider permission and explicit request consent; running locally does not mean cloud requests remain on the device.
+
+See [private-data setup and Windows/macOS migration](docs/private-data.md). Install the local commit/push protections and run a privacy audit before publishing:
+
+```sh
+node scripts/install-privacy-tools.mjs --hooks
+node scripts/privacy-audit.mjs
+```
+
+These checks combine pinned Gitleaks with private-file and outgoing-history checks. See [privacy audit details](docs/privacy-audit.md). No commits, pushes, history rewrites, or user-data deletions happen automatically.
+
 ## What is included
 
 - A responsive Angular Material shell with Dashboard, Chat, Writing, My Agents, Projects, and Settings navigation.
@@ -15,13 +28,13 @@ The repository is rooted directly in this folder.
 - Editable output, independent email subject/body generation, reusable Markdown presets, instruction previews, and revision-checked draft storage.
 - Working browser exports of the latest edited document as TXT, PDF, DOCX, and paginated PNG images. Export never calls an AI provider.
 - A mock email account selector and exact message preview with live sending disabled.
-- Validated REST endpoints, an in-memory repository, and a replaceable `AIProvider` boundary.
+- Validated REST endpoints, mode-dependent repository implementations, and a replaceable `AIProvider` boundary.
 - Rules Management: global instructions, ordered agent-specific Markdown assignments, and deterministic instruction composition.
 - Knowledge Management: document metadata, agent/project associations, independent storage and retrieval interfaces, and untrusted reference data.
 - Tool Management: tool contracts, registry, per-agent enablement, permission requirements, and an authorization policy that blocks execution by default.
 - Backend and frontend tests, Maven Wrapper, and an npm lockfile.
 
-All AI output is simulated. Writing samples do not perform real translation or interpret Markdown style instructions; automatic language detection is an explicitly labeled keyword heuristic. Agent changes, saved writing drafts, and edited presets live in backend memory and reset on restart. Unsaved writing documents and conversation history are temporary browser-session state. CV, Cover Letter, and Job Application modes are visibly planned and disabled; creating additional agents is also future work.
+All AI output is simulated. Writing samples do not perform real translation or interpret Markdown style instructions; automatic language detection is an explicitly labeled keyword heuristic. Demo changes reset on restart; personal agents, drafts, presets, rules, configuration, usage, and conversation history persist in PostgreSQL. Unsaved browser edits remain temporary. CV, Cover Letter, and Job Application modes are visibly planned and disabled; creating additional agents is also future work.
 
 ## Technologies
 
@@ -31,7 +44,7 @@ All AI output is simulated. Writing samples do not perform real translation or i
 | Backend tests | JUnit 5, Mockito, Spring MVC tests |
 | Frontend | Angular 21, TypeScript 5.9, Angular Material, SCSS |
 | Document export | Lazy-loaded pdfmake with embedded Unicode fonts, docx, and browser Canvas 2D |
-| Storage and providers | In-memory configuration/draft/preset repositories and local mock AI provider |
+| Storage and providers | Demo memory or personal PostgreSQL/Flyway, guarded external filesystem storage, and local mock AI provider |
 
 Exact dependency versions are recorded in `backend/pom.xml` and `frontend/package-lock.json`.
 
@@ -134,7 +147,7 @@ Use **Settings** to manage model configurations, provider enablement, applicatio
 
 Only the mock adapter is installed. OpenAI, Anthropic, and Local provider targets require future adapters and explicit server-side configuration. Model registration or provider enablement does not connect an API. No model prices, limits, or real capabilities are assumed. Mock usage has no measured tokens or API billing; real cost estimates require configured pricing and provider-reported usage.
 
-Registry entries, provider enablement, defaults, tier mappings, and usage records use temporary in-memory repository implementations and reset on backend restart. PostgreSQL is the intended future store; it is not yet implemented. See [Model management](docs/models.md) for resolution precedence, supported controls, fallback permission, credential boundaries, estimates, APIs, and persistence follow-up.
+Registry entries, provider enablement, defaults, tier mappings, and usage use demo memory or private personal PostgreSQL. See [Model management](docs/models.md) for selection/usage behavior and [private-data setup](docs/private-data.md) for modes, credentials, persistence, and filesystem separation.
 
 ## Development and testing
 
@@ -176,13 +189,13 @@ The current verification environment uses JDK 22 with Java release 21 compilatio
 
 ## Current scope
 
-Agent updates, drafts, preset edits, knowledge metadata, and conversations are volatile. Projects remains a navigation foundation; Settings manages providers, models, defaults, and usage. There is no database, authentication, streaming, real AI integration, document upload/storage implementation, vector database, embedding generation, executable tool access, terminal execution, or native desktop package. Email connectors have no live OAuth or delivery implementation; review checkboxes and generation never authorize sending. The unauthenticated API is intended for local use. Server-verified authorization and durable approval/idempotency storage are prerequisites for external integrations.
+Projects remains a navigation foundation; Settings manages models, defaults, usage, and provider data-sharing permission. Personal mode has private PostgreSQL persistence and external byte/export storage. General document-upload UI, authentication, streaming, real AI adapters, vector retrieval, embeddings, executable tools, and desktop packaging remain future work. Email connectors have no live OAuth or delivery implementation; generation and cloud-content consent never authorize email sending. Personal mode restricts the unauthenticated API to loopback; do not expose it through a public proxy or tunnel.
 
 ## Roadmap
 
 1. Phase 2: factual master professional profiles, CVs, cover letters, job-advertisement input, and reviewed application packages.
 2. Phase 2: document attachments and optional recipient assistance using explicitly classified mock data before any live discovery.
-3. Phase 3: persistence, authentication, authorized ownership, and document uploads with provider-independent storage and retrieval.
+3. Phase 3: authentication, authorized multi-user ownership, document-upload UI, and real retrieval through the existing private storage boundaries.
 4. Phase 3: real AI providers; Gmail OAuth and other email connectors with encrypted token storage, separate permissions, exact-message confirmation, and durable duplicate prevention.
 5. Phase 3: permission-controlled contact/company research and tools, conversation streaming, and user-controlled browser integration. No automated job-portal submission is implemented.
 6. Later: backend lifecycle and packaging for a Tauri desktop application.

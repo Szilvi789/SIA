@@ -8,7 +8,34 @@ backend/mvnw.cmd text eol=crlf
 *.jpg binary
 *.jpeg binary
 *.gif binary
+*.webp binary
+*.tif binary
+*.tiff binary
+*.heic binary
+*.heif binary
+*.bmp binary
 *.ico binary
 *.woff binary
 *.woff2 binary
 *.jar binary
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+*.odt binary
+*.ods binary
+*.zip binary
+*.gz binary
+*.7z binary
+*.dump binary
+*.sqlite binary
+*.db binary
+
+# Attributes control line endings/diffs, not privacy or Git tracking.
+*.sh text eol=lf
+*.mjs text eol=lf
+*.sql text eol=lf
+*.md text eol=lf

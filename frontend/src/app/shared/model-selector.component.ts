@@ -31,6 +31,14 @@ import { Agent, AIModel, GlobalModelSettings, ModelSelection } from '../core/mod
         <p class="model-detail">Capabilities: {{model.capabilities?.join(', ') || 'Unknown'}}.
           Structured output: {{capability(model.structuredOutput)}} · Tools: {{capability(model.toolCalling)}} · Vision: {{capability(model.vision)}}</p>
         <p class="model-detail">{{pricingText(model)}} {{outputEstimate(model)}}</p>
+        @if(model.providerId !== 'mock'){
+          <div class="sharing-notice">
+            <p><strong>Local app, separate provider.</strong> This model may send task text, email fields, agent instructions, and preferences outside your device. The adapter must declare its processing location; unknown locations are blocked.</p>
+            <label class="sharing-check"><input type="checkbox" [checked]="taskAuthorized(model.providerId)" [disabled]="disabled()" (change)="authorizeTask(model.providerId, $any($event.target).checked)"> Authorize this request's task and instructions for {{model.providerId}}.</label>
+            @if(agent()?.knowledgeSourceIds?.length){<label class="sharing-check"><input type="checkbox" [checked]="!!selection().dataSharingConsent?.knowledgeSourceIds?.length" [disabled]="disabled() || !taskAuthorized(model.providerId)" (change)="authorizeKnowledge(model.providerId, $any($event.target).checked)"> Also authorize selected passages from this agent's assigned knowledge sources.</label>}
+            <p>Local retrieval alone does not authorize cloud sharing. Personal mode and saved provider permissions are required. Consent clears after generation and when the model changes.</p>
+          </div>
+        }
       } @else {
         <p class="model-error" role="status">{{configurationMessage()}}</p>
       }
@@ -68,6 +76,18 @@ export class ModelSelectorComponent {
     if (this.disabled()) return;
     this.selectionChange.emit(choice.startsWith('tier:') ? { overrideTier: choice.slice(5) }
       : choice.startsWith('model:') ? { overrideModelId: choice.slice(6) } : {});
+  }
+  taskAuthorized(providerId: string): boolean {
+    const consent = this.selection().dataSharingConsent;
+    return consent?.providerId === providerId && consent.taskContent && consent.personalInstructions;
+  }
+  authorizeTask(providerId: string, allowed: boolean): void {
+    this.selectionChange.emit({ ...this.selection(), dataSharingConsent: allowed
+      ? { providerId, taskContent: true, personalInstructions: true, knowledgeSourceIds: [] } : null });
+  }
+  authorizeKnowledge(providerId: string, allowed: boolean): void {
+    this.selectionChange.emit({ ...this.selection(), dataSharingConsent: { providerId, taskContent: true, personalInstructions: true,
+      knowledgeSourceIds: allowed ? [...(this.agent()?.knowledgeSourceIds ?? [])] : [] } });
   }
   tierLabel(tier: string): string { return tier[0] + tier.slice(1).toLowerCase(); }
   modelName(id: string): string { return this.models().find(model => model.id === id)?.name || id; }

@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Repository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Repository
+@ConditionalOnProperty(name = "sai.mode", havingValue = "demo", matchIfMissing = true)
 public class InMemoryDraftRepository implements DraftRepository {
     private final ConcurrentHashMap<String, WritingDraft> drafts = new ConcurrentHashMap<>();
     @Override public List<WritingDraft> findAll() {

@@ -8,8 +8,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.springframework.stereotype.Repository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Repository
+@ConditionalOnProperty(name = "sai.mode", havingValue = "demo", matchIfMissing = true)
 public class InMemoryAgentRepository implements AgentRepository {
     private final ConcurrentMap<String, Agent> agents = new ConcurrentHashMap<>();
 

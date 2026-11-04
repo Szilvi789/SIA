@@ -11,3 +11,5 @@ p { margin:7px 0; line-height:1.5; }
 .selection-foot { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:11px; }
 button { background:#edf2e9; color:#294b36; border:1px solid #d7e0d1; border-radius:6px; padding:5px 8px; cursor:pointer; font:inherit; }
 select:focus-visible,button:focus-visible,summary:focus-visible { outline:2px solid #477553; outline-offset:2px; }
+.sharing-notice { margin-top:10px; padding:10px; background:#f6f4ea; border:1px solid #e5dfc9; border-radius:8px; }
+.sharing-check { flex-direction:row; align-items:flex-start; line-height:1.5; margin:8px 0; font-weight:400; }

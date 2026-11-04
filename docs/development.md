@@ -10,9 +10,9 @@ The Angular development server proxies `/api` to the local backend. Keep API acc
 
 After applying the Writing & Communication feature, stop any older backend/frontend processes with `Ctrl+C`, run `npm.cmd ci` (`npm ci` on macOS/Linux) in `frontend`, and restart both servers once. This loads the new Java endpoints and updated frontend dependencies together. Subsequent frontend source edits reload through `npm start`; restart that development server after proxy or dependency configuration changes. Restart the backend after Java/resource changes when running with the standard Maven command.
 
-Backend restart resets saved drafts, preset edits, agent changes, mock account disconnections, and email preview/duplicate-attempt records because storage is in memory. Copy or export important draft content before restarting. A browser reload separately clears unsaved writing documents and temporary chat history.
+Demo backend restart resets saved drafts, preset edits, agent changes, and usage because demo storage is in memory. Personal mode persists configuration, private rules, drafts, usage, and conversations in PostgreSQL. Unsaved browser edits remain temporary. Mock account disconnections and email preview/duplicate-attempt state are still temporary infrastructure fixtures; no live email service is connected.
 
-Model registry entries, application/agent tier mappings, provider enablement, and usage records also reset on backend restart. There is no PostgreSQL configuration to reuse yet. The feature uses repository interfaces with temporary in-memory implementations; an eventual shared PostgreSQL datasource and additive Flyway migrations should replace these implementations. See [Model management](models.md) for configuration, usage estimation, adapter extension, and credential requirements. No API keys are needed for local mock startup.
+See [private-data setup](private-data.md) for personal PostgreSQL configuration, external `SAI_DATA_DIR`, Windows/macOS instructions, and migration. See [Model management](models.md) for usage estimation and adapter extension. No API keys are needed for local mock startup. Run `node scripts/privacy-audit.mjs` before pushing; local hook setup is documented in [Privacy audit](privacy-audit.md).
 
 ## Backend checks
 

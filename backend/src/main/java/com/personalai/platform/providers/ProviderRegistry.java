@@ -28,7 +28,8 @@ public class ProviderRegistry {
         var adapter = providers.get(id);
         boolean enabled = configuration.enabledStates().getOrDefault(id, "mock".equals(id));
         return new ProviderConfiguration(id, name, enabled, adapter != null,
-                adapter != null && adapter.configured(), adapter != null && adapter.mock());
+                adapter != null && adapter.configured(), adapter != null && adapter.mock(),
+                adapter == null ? com.personalai.platform.privacy.DataLocality.UNKNOWN : adapter.dataLocality());
     }
     public ProviderConfiguration setEnabled(String id, boolean enabled) {
         configuration(id);

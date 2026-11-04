@@ -76,6 +76,7 @@ class DefaultAgentExecutionServiceTest {
         when(provider.id()).thenReturn("mock");
         lenient().when(provider.configured()).thenReturn(true);
         lenient().when(provider.mock()).thenReturn(true);
+        lenient().when(provider.dataLocality()).thenReturn(com.personalai.platform.privacy.DataLocality.LOCAL);
         lenient().when(provider.generateResult(any())).thenAnswer(invocation ->
                 new ProviderResult(provider.generate(invocation.getArgument(0)), null));
         providers = new ProviderRegistry(List.of(provider));
@@ -134,6 +135,9 @@ class DefaultAgentExecutionServiceTest {
         AIProvider alternate = new AIProvider() {
             public String id() { return "alternate"; }
             public boolean configured() { return true; }
+            public com.personalai.platform.privacy.DataLocality dataLocality() {
+                return com.personalai.platform.privacy.DataLocality.LOCAL;
+            }
             public String generate(ProviderRequest request) { captured.set(request); return "Alternate response"; }
         };
         var crossProvider = new ProviderRegistry(List.of(provider, alternate));

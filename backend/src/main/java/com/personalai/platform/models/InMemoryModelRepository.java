@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /** TEMPORARY: model definitions and tier mappings reset on process restart. */
 @Repository
+@ConditionalOnProperty(name = "sai.mode", havingValue = "demo", matchIfMissing = true)
 public class InMemoryModelRepository implements ModelRepository {
     private final Map<String, ModelDescriptor> models = new LinkedHashMap<>();
     private ApplicationModelSettings settings = new ApplicationModelSettings("mock-balanced",

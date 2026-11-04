@@ -21,7 +21,7 @@ describe('WritingComponent', () => {
     await TestBed.configureTestingModule({
       imports: [WritingComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: WorkspaceService, useValue: { selectedModelId: signal('mock-balanced'), agents: signal([{id: 'writing-agent', modelId: 'mock-balanced'}]), modelSettings: signal({defaultModelId: 'mock-balanced', tierMappings: {}}), models: signal([{ id: 'mock-balanced', name: 'Mock Balanced' }]) } },
+        { provide: WorkspaceService, useValue: { online: signal(true), runtimeConfig: signal({mode: 'demo', persistent: false}), selectedModelId: signal('mock-balanced'), agents: signal([{id: 'writing-agent', modelId: 'mock-balanced'}]), modelSettings: signal({defaultModelId: 'mock-balanced', tierMappings: {}}), models: signal([{ id: 'mock-balanced', name: 'Mock Balanced' }]) } },
         { provide: DocumentExportService, useValue: exporter }
       ]
     }).compileComponents();

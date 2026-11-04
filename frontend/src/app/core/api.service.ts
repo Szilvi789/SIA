@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Agent, AgentUpdate, AIModel, ChatRequest, ChatResponse, GlobalModelSettings, Health, ProviderStatus, UsageRecord, UsageSummary } from './models';
+import { Agent, AgentUpdate, AIModel, ChatRequest, ChatResponse, Conversation, GlobalModelSettings, Health, ProviderDataPermission, ProviderStatus, RuntimeConfig, UsageRecord, UsageSummary } from './models';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', { factory: () => '/api' });
 
@@ -11,6 +11,10 @@ export class ApiService {
   readonly baseUrl = inject(API_BASE_URL);
 
   health(): Observable<Health> { return this.http.get<Health>(`${this.baseUrl}/health`); }
+  runtimeConfig(): Observable<RuntimeConfig> { return this.http.get<RuntimeConfig>(`${this.baseUrl}/runtime-config`); }
+  conversations(): Observable<Conversation[]> { return this.http.get<Conversation[]>(`${this.baseUrl}/conversations`); }
+  providerDataPermissions(): Observable<ProviderDataPermission[]> { return this.http.get<ProviderDataPermission[]>(`${this.baseUrl}/provider-data-permissions`); }
+  updateProviderDataPermission(permission: ProviderDataPermission): Observable<ProviderDataPermission> { return this.http.put<ProviderDataPermission>(`${this.baseUrl}/providers/${encodeURIComponent(permission.providerId)}/data-permission`, permission); }
   agents(): Observable<Agent[]> { return this.http.get<Agent[]>(`${this.baseUrl}/agents`); }
   agent(id: string): Observable<Agent> { return this.http.get<Agent>(`${this.baseUrl}/agents/${encodeURIComponent(id)}`); }
   updateAgent(id: string, agent: AgentUpdate): Observable<Agent> {
