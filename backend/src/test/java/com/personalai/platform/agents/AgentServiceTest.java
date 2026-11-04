@@ -13,6 +13,7 @@ import com.personalai.platform.knowledge.KnowledgeFormat;
 import com.personalai.platform.knowledge.KnowledgeService;
 import com.personalai.platform.knowledge.KnowledgeSource;
 import com.personalai.platform.models.ModelCatalog;
+import com.personalai.platform.models.ModelResolver;
 import com.personalai.platform.providers.MockAIProvider;
 import com.personalai.platform.providers.ProviderRegistry;
 import com.personalai.platform.rules.InMemoryRuleRepository;
@@ -188,7 +189,7 @@ class AgentServiceTest {
     }
 
     private AgentService serviceWith(ToolRegistry tools) {
-        return new AgentService(repository, new ModelCatalog(), new ProviderRegistry(List.of(new MockAIProvider())),
+        return new AgentService(repository, new ModelResolver(new ModelCatalog(), new ProviderRegistry(List.of(new MockAIProvider()))),
                 new RuleService(new InMemoryRuleRepository()), new KnowledgeService(sources), tools);
     }
 

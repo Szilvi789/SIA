@@ -12,6 +12,8 @@ After applying the Writing & Communication feature, stop any older backend/front
 
 Backend restart resets saved drafts, preset edits, agent changes, mock account disconnections, and email preview/duplicate-attempt records because storage is in memory. Copy or export important draft content before restarting. A browser reload separately clears unsaved writing documents and temporary chat history.
 
+Model registry entries, application/agent tier mappings, provider enablement, and usage records also reset on backend restart. There is no PostgreSQL configuration to reuse yet. The feature uses repository interfaces with temporary in-memory implementations; an eventual shared PostgreSQL datasource and additive Flyway migrations should replace these implementations. See [Model management](models.md) for configuration, usage estimation, adapter extension, and credential requirements. No API keys are needed for local mock startup.
+
 ## Backend checks
 
 From `backend`:

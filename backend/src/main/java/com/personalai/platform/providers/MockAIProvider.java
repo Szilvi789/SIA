@@ -47,7 +47,8 @@ public class MockAIProvider implements AIProvider {
                         + "Active instructions: %s\nConfiguration: %s · temperature %.1f · max output %d tokens. "
                         + "These settings are included for inspection; this template does not perform sampling or token accounting.",
                 request.agent().name(), body, style, excerpt(request.agent().systemPrompt(), 240),
-                request.model().name(), request.agent().temperature(), request.agent().maxOutputTokens());
+                request.model().name(), request.parameters().temperature() == null ? request.agent().temperature() : request.parameters().temperature(),
+                request.parameters().maxOutputTokens() == null ? request.agent().maxOutputTokens() : request.parameters().maxOutputTokens());
     }
 
     private String excerpt(String text, int limit) {

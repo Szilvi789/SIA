@@ -46,8 +46,9 @@ The frontend uses relative API URLs. The development proxy connects it to the ba
 | `configuration` | Application wiring and configuration shared across modules. |
 | `agents` | Agent definitions, validated configuration, repository, service, and REST resources. |
 | `chat` | Chat DTOs, request validation, and agent execution orchestration. |
-| `models` | Provider/model metadata exposed to the frontend. |
-| `providers` | The `AIProvider` abstraction and the mock implementation. |
+| `models` | Configurable registry repository, application/agent tier settings, deterministic resolution, capability and parameter validation. |
+| `providers` | Provider configuration/status, the existing `AIProvider` abstraction, shared execution/fallback accounting, and the mock implementation. |
+| `usage` | Provider-reported token usage, decimal estimates with price snapshots, per-agent/model summaries, and repository ports. |
 | `rules` | Trusted Markdown instructions, immutable application policy, assignment validation, and deterministic instruction composition. |
 | `knowledge` | Document metadata, explicit agent/project associations, storage/retrieval ports, and untrusted excerpts. |
 | `tools` | Registered tool contracts and metadata, per-agent enablement, permission requirements, and an authorization gate that denies execution by default. |
@@ -75,9 +76,11 @@ The detailed contracts, trust boundaries, and future integration sequence are de
 
 ## Frontend modules
 
+The shared `ModelSelectorComponent` displays configured models, tiers, providers, capabilities, and pricing. `WorkspaceService` stores separate conversation overrides; `WritingStateService` stores document-specific overrides. They send selection context to `ProviderExecutionService`, which resolves through `ModelResolver`, passes the actual model and validated parameters to the adapter, and returns execution metadata. Settings manages the existing registry rather than creating another catalog. Model, provider configuration, usage, and agent repositories remain temporary in-memory implementations; PostgreSQL integration is pending. See [Model management](models.md) for the complete contracts and limitations.
+
 The standalone Angular application separates layout and views from typed API services. Angular Material supplies accessible interface primitives, while SCSS provides the application theme and responsive layout.
 
-The shell provides Dashboard, Chat, Writing, My Agents, Projects, and Settings navigation. The chat view selects an agent/model and submits messages as before. My Agents edits shared in-memory configuration and preserves rule/knowledge assignments. Writing adds the editor, draft library, Markdown preset editor, instruction preview, email fields, and mock preview. General knowledge/tool/upload/approval management remains future work. Projects and Settings reserve space for future features and do not imply database storage, credential management, or tool execution.
+The shell provides Dashboard, Chat, Writing, My Agents, Projects, and Settings navigation. The chat view selects an agent/model and submits messages as before. My Agents edits shared in-memory configuration and preserves rule/knowledge assignments. Writing adds the editor, draft library, Markdown preset editor, instruction preview, email fields, and mock preview. General knowledge/tool/upload/approval management remains future work. Projects reserves space for future features. Settings manages model/provider metadata, tiers, defaults, and usage without storing credentials or implementing external adapters.
 
 API services are the boundary between UI state and HTTP transport. `WorkspaceService` owns catalogs, connection state, per-agent conversations and drafts, and pending chat state. This keeps failed messages recoverable even when the chat view is destroyed during navigation. Backend configuration survives view changes but is lost when the backend restarts. Conversation history is temporary UI state and is not a persistent conversation store.
 
@@ -91,7 +94,7 @@ The API base URL comes from a public runtime configuration file and an Angular i
 
 1. The frontend loads agent and model catalogs from `/api`.
 2. A user selects an agent/model and sends a message.
-3. Spring validates the request and resolves the agent, its provider, and the selected compatible model.
+3. Spring validates the request, resolves the agent and effective model through the shared resolver, and selects the model's provider.
 4. `RuleService` validates rule assignments and composes immutable policy, sorted global rules, the existing agent prompt, and assigned agent rules in list order.
 5. `KnowledgeService` validates that every referenced source exists and is explicitly associated with this agent. Project association alone grants no access.
 6. `ToolRegistry` resolves enabled tool definitions and rejects unknown or duplicate IDs.

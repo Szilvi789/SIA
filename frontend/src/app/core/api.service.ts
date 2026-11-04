@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Agent, AgentUpdate, AIModel, ChatRequest, ChatResponse, Health } from './models';
+import { Agent, AgentUpdate, AIModel, ChatRequest, ChatResponse, GlobalModelSettings, Health, ProviderStatus, UsageRecord, UsageSummary } from './models';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', { factory: () => '/api' });
 
@@ -17,6 +17,14 @@ export class ApiService {
     return this.http.put<Agent>(`${this.baseUrl}/agents/${encodeURIComponent(id)}`, agent);
   }
   models(): Observable<AIModel[]> { return this.http.get<AIModel[]>(`${this.baseUrl}/models`); }
+  model(id: string): Observable<AIModel> { return this.http.get<AIModel>(`${this.baseUrl}/models/${encodeURIComponent(id)}`); }
+  updateModel(id: string, model: AIModel): Observable<AIModel> { return this.http.put<AIModel>(`${this.baseUrl}/models/${encodeURIComponent(id)}`, model); }
+  modelSettings(): Observable<GlobalModelSettings> { return this.http.get<GlobalModelSettings>(`${this.baseUrl}/model-settings`); }
+  updateModelSettings(settings: GlobalModelSettings): Observable<GlobalModelSettings> { return this.http.put<GlobalModelSettings>(`${this.baseUrl}/model-settings`, settings); }
+  providers(): Observable<ProviderStatus[]> { return this.http.get<ProviderStatus[]>(`${this.baseUrl}/providers`); }
+  updateProvider(id: string, enabled: boolean): Observable<ProviderStatus> { return this.http.put<ProviderStatus>(`${this.baseUrl}/providers/${encodeURIComponent(id)}`, { enabled }); }
+  usage(): Observable<UsageRecord[]> { return this.http.get<UsageRecord[]>(`${this.baseUrl}/usage`); }
+  usageSummary(): Observable<UsageSummary[]> { return this.http.get<UsageSummary[]>(`${this.baseUrl}/usage/summary`); }
   chat(request: ChatRequest): Observable<ChatResponse> { return this.http.post<ChatResponse>(`${this.baseUrl}/chat`, request); }
 }
 

@@ -60,9 +60,7 @@ class PlatformApiTest {
                 .andExpect(jsonPath("$[0].enabledTools", hasSize(0)));
         mvc.perform(get("/api/models"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(jsonPath("$[0].id").value("mock-balanced"))
-                .andExpect(jsonPath("$[0].providerId").value("mock"));
+                .andExpect(jsonPath("$[?(@.id == 'mock-balanced')].providerId", org.hamcrest.Matchers.contains("mock")));
     }
 
     @Test
@@ -120,7 +118,7 @@ class PlatformApiTest {
         mvc.perform(post("/api/chat").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.agentId").isNotEmpty())
-                .andExpect(jsonPath("$.errors.modelId").isNotEmpty());
+                .andExpect(jsonPath("$.errors.message").isNotEmpty());
     }
 
     @Test

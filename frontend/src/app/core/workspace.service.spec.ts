@@ -31,9 +31,40 @@ describe('WorkspaceService', () => {
 
   afterEach(() => http.verify());
 
+  it('keeps model overrides within a conversation and resolves defaults on the backend', () => {
+    finishLoad();
+    workspace.selectModel({ overrideModelId: 'mock-precise' });
+    workspace.send('First task');
+    const first = http.expectOne('/api/chat');
+    expect(first.request.body).toMatchObject({ overrideModelId: 'mock-precise', conversationId: expect.any(String) });
+    expect(first.request.body.modelId).toBeUndefined();
+    const conversationId = first.request.body.conversationId;
+    first.flush(reply());
+    workspace.selectAgent('translation-agent');
+    expect(workspace.selectedModelSelection()).toEqual({});
+    workspace.selectAgent('coding-agent');
+    expect(workspace.selectedModelSelection()).toEqual({ overrideModelId: 'mock-precise' });
+    workspace.clearConversation();
+    expect(workspace.selectedModelSelection()).toEqual({});
+    workspace.send('A new conversation');
+    const next = http.expectOne('/api/chat');
+    expect(next.request.body.conversationId).not.toBe(conversationId);
+    expect(next.request.body.overrideModelId).toBeUndefined();
+    expect(workspace.agents()[0].modelId).toBe('mock-balanced');
+    next.flush(reply());
+  });
+
+  it('does not overwrite a conversation override when agent defaults are saved', () => {
+    finishLoad();
+    workspace.selectModel({ overrideModelId: 'mock-precise' });
+    workspace.replaceAgent({ ...coding, name: 'Updated default' });
+    expect(workspace.selectedModelId()).toBe('mock-precise');
+  });
+
   function finishLoad(agents: Agent[] = [coding, translation], availableModels: AIModel[] = models): void {
     http.expectOne('/api/agents').flush(agents);
     http.expectOne('/api/models').flush(availableModels);
+    http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
   }
 
@@ -47,6 +78,7 @@ describe('WorkspaceService', () => {
     http.expectOne('/api/agents').flush([coding, translation]);
     http.expectOne('/api/models').flush(models);
     expect(workspace.loading()).toBe(true);
+    http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
 
     expect(workspace.loading()).toBe(false);
@@ -59,6 +91,7 @@ describe('WorkspaceService', () => {
   it('reports a failed connection and can recover when the backend starts', () => {
     http.expectOne('/api/agents').flush([coding]);
     http.expectOne('/api/models').flush(models);
+    http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {ECONOMY: 'mock-precise', BALANCED: 'mock-balanced'}});
     http.expectOne('/api/health').error(new ProgressEvent('error'));
 
     expect(workspace.loading()).toBe(false);
@@ -115,7 +148,7 @@ describe('WorkspaceService', () => {
     workspace.send('An accidental second click');
     const request = http.expectOne('/api/chat');
     expect(request.request.body).toEqual({
-      agentId: 'coding-agent', modelId: 'mock-balanced', message: 'Review this method'
+      agentId: 'coding-agent', conversationId: expect.any(String), message: 'Review this method'
     });
 
     workspace.selectAgent('translation-agent');

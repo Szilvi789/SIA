@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { errorMessage } from '../core/api.service';
 import { WorkspaceService } from '../core/workspace.service';
+import { ModelSelection } from '../core/models';
 import { WritingApiService } from './writing-api.service';
 import {
   EmailComposition, GenerationPart, InstructionPreview, newWritingDocument, WORKFLOWS,
@@ -27,7 +28,8 @@ export class WritingStateService {
   readonly presetSaving = signal(false);
   readonly previewing = signal(false);
   readonly instructionPreview = signal<InstructionPreview | null>(null);
-  readonly document = computed(() => this.documents()[this.workflow()] ?? newWritingDocument(this.workflow(), this.workspace.selectedModelId(), this.options().accounts[0]?.id));
+  readonly document = computed(() => this.documents()[this.workflow()] ?? newWritingDocument(this.workflow(), '', this.options().accounts[0]?.id));
+  readonly modelSelection = computed<ModelSelection>(() => ({ modelId: this.document().modelId || undefined, overrideModelId: this.document().overrideModelId, overrideTier: this.document().overrideTier }));
   readonly generating = computed(() => this.pending() !== null);
   readonly locked = computed(() => this.pending()?.workflow === this.workflow());
   readonly availablePresets = computed(() => this.options().presets.filter(preset => preset.enabled && (preset.workflow === 'GENERAL' || preset.workflow === this.workflow())));
@@ -54,7 +56,7 @@ export class WritingStateService {
   selectWorkflow(workflow: WritingWorkflow): void {
     if (!this.options().workflows.some(item => item.id === workflow && item.supported)) return;
     if (!this.documents()[workflow]) {
-      const doc = newWritingDocument(workflow, this.workspace.selectedModelId(), this.options().accounts[0]?.id);
+      const doc = newWritingDocument(workflow, '', this.options().accounts[0]?.id);
       this.documents.update(documents => ({ ...documents, [workflow]: doc }));
     }
     this.workflow.set(workflow);
@@ -65,6 +67,10 @@ export class WritingStateService {
 
   updateField(field: 'input' | 'title' | 'modelId', value: string): void {
     if (!this.locked()) this.edit({ [field]: value });
+  }
+
+  selectModel(selection: ModelSelection): void {
+    if (!this.locked()) this.edit({ modelId: '', overrideModelId: selection.overrideModelId, overrideTier: selection.overrideTier });
   }
 
   updatePreferences(patch: Partial<WritingPreferences>): void {
@@ -123,12 +129,12 @@ export class WritingStateService {
           this.setDocument(snapshot.workflow, {
             ...current, title: current.title || result.title, content, subject,
             email: { ...current.email, subject, body: content, generationPart: part },
-            detectedLanguage: result.detectedLanguage, appliedRuleIds: result.appliedRuleIds,
+            detectedLanguage: result.detectedLanguage, appliedRuleIds: result.appliedRuleIds, lastExecution: result.execution,
             manualContent: part === 'SUBJECT' ? current.manualContent : false,
             manualSubject: part === 'BODY' ? current.manualSubject : false,
             dirty: true, editVersion: current.editVersion + 1
           });
-          this.status.set('Mock draft generated. Review and edit before using it.');
+          this.status.set(`${result.mock ? 'Mock draft' : 'Draft'} generated${result.modelId ? ' with ' + result.providerId + ' / ' + result.modelId : ''}. Review and edit before using it.`);
         }
         this.pending.set(null);
       },
@@ -206,7 +212,8 @@ export class WritingStateService {
 
   private request(doc: WritingDocument, part: GenerationPart = 'COMPLETE'): WritingRequest {
     return {
-      workflow: doc.workflow, input: doc.input, modelId: doc.modelId, preferences: structuredClone(doc.preferences),
+      workflow: doc.workflow, input: doc.input, modelId: doc.modelId, overrideModelId: doc.overrideModelId,
+      overrideTier: doc.overrideTier, conversationId: doc.conversationId, preferences: structuredClone(doc.preferences),
       email: { ...doc.email, subject: doc.subject, body: doc.content, generationPart: part }
     };
   }
@@ -222,8 +229,13 @@ export class WritingStateService {
   }
 
   private toDraft(doc: WritingDocument): WritingDraft {
+    const agent = this.workspace.agents().find(agent => agent.id === 'writing-agent');
+    const tier = doc.overrideTier || agent?.modelSettings?.defaultTier;
+    const modelId = doc.modelId || doc.overrideModelId || (tier
+      ? agent?.modelSettings?.tierMappings[tier] || this.workspace.modelSettings().tierMappings[tier] || ''
+      : agent?.modelId || this.workspace.modelSettings().defaultModelId || '');
     return {
-      ...this.request(doc, doc.email.generationPart), id: doc.id, title: doc.title.trim() || 'Untitled document',
+      ...this.request(doc, doc.email.generationPart), modelId, id: doc.id, title: doc.title.trim() || 'Untitled document',
       content: doc.content, subject: doc.subject, status: 'DRAFT', revision: doc.revision, updatedAt: doc.updatedAt
     };
   }

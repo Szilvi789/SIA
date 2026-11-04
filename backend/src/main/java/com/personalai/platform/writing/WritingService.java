@@ -5,14 +5,14 @@ import com.personalai.platform.common.InvalidConfigurationException;
 import com.personalai.platform.knowledge.KnowledgeQuery;
 import com.personalai.platform.knowledge.KnowledgeRetriever;
 import com.personalai.platform.knowledge.KnowledgeService;
-import com.personalai.platform.models.ModelCatalog;
-import com.personalai.platform.providers.ProviderRegistry;
+import com.personalai.platform.providers.ProviderExecutionService;
 import com.personalai.platform.providers.ProviderRequest;
 import com.personalai.platform.rules.ResolvedInstructions;
 import com.personalai.platform.tools.ToolRegistry;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -20,8 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class WritingService {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private final AgentService agents;
-    private final ModelCatalog models;
-    private final ProviderRegistry providers;
+    private final ProviderExecutionService execution;
     private final WritingInstructionComposer composer;
     private final LanguageDetector detector;
     private final KnowledgeService knowledge;
@@ -29,10 +28,10 @@ public class WritingService {
     private final ToolRegistry tools;
     private final Clock clock;
 
-    public WritingService(AgentService agents, ModelCatalog models, ProviderRegistry providers,
+    public WritingService(AgentService agents, ProviderExecutionService execution,
             WritingInstructionComposer composer, LanguageDetector detector, KnowledgeService knowledge,
             KnowledgeRetriever retriever, ToolRegistry tools, Clock clock) {
-        this.agents = agents; this.models = models; this.providers = providers; this.composer = composer;
+        this.agents = agents; this.execution = execution; this.composer = composer;
         this.detector = detector; this.knowledge = knowledge; this.retriever = retriever; this.tools = tools; this.clock = clock;
     }
     public ResolvedInstructions previewInstructions(WritingRequest request) {
@@ -42,7 +41,6 @@ public class WritingService {
     public WritingResult generate(WritingRequest request) {
         requireWorkflow(request);
         var agent = agents.findById("writing-agent");
-        var model = models.requireCompatible(agent.providerId(), request.modelId());
         var instructions = composer.compose(agent, request);
         String input = request.input().strip();
         if (input.isBlank() && request.workflow() == WritingWorkflow.EMAIL) input = request.email().body().strip();
@@ -58,9 +56,13 @@ public class WritingService {
         if (context.stream().anyMatch(excerpt -> !agent.knowledgeSourceIds().contains(excerpt.sourceId()))) {
             throw new InvalidConfigurationException("Knowledge retrieval returned an unassigned source.");
         }
-        var response = providers.require(agent.providerId()).generate(new ProviderRequest(agent, model, input, instructions,
-                context, tools.definitionsFor(agent.enabledTools()), new WritingContext(request.workflow(), request.preferences(), request.email(), detected)));
-        var parsed = parse(response);
+        var message = input;
+        var availableTools = tools.definitionsFor(agent.enabledTools());
+        var result = execution.execute(agent, request.selection(), Set.of("TEXT", "STRUCTURED_OUTPUT"),
+                request.workflow().name(), resolved -> new ProviderRequest(agent, resolved.model(), message, instructions,
+                        context, availableTools, new WritingContext(request.workflow(), request.preferences(), request.email(), detected),
+                        resolved.parameters()), this::parse);
+        var parsed = parse(result.content());
         String body = parsed.content();
         String subject = parsed.subject();
         if (request.workflow() == WritingWorkflow.EMAIL) {
@@ -68,8 +70,9 @@ public class WritingService {
             if (request.email().generationPart() == EmailComposition.GenerationPart.BODY) subject = request.email().subject();
         } else subject = "";
         return new WritingResult(UUID.randomUUID().toString(), parsed.title(), body, subject, request.workflow(), detected,
-                request.preferences().outputLanguage(), request.preferences().translationMode(), "mock".equals(agent.providerId()),
-                instructions.appliedRuleIds(), Instant.now(clock));
+                request.preferences().outputLanguage(), request.preferences().translationMode(), result.metadata().mock(),
+                instructions.appliedRuleIds(), Instant.now(clock), result.metadata().providerId(), result.metadata().modelId(),
+                result.metadata().source(), result.metadata());
     }
     private static void requireWorkflow(WritingRequest request) {
         if (!request.workflow().supported()) throw new InvalidConfigurationException("workflow", "This workflow is planned for Phase 2.");

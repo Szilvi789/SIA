@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.personalai.platform.common.InvalidConfigurationException;
+import com.personalai.platform.agents.AgentUpdateRequest;
 import com.personalai.platform.knowledge.KnowledgeExcerpt;
+import com.personalai.platform.models.ModelDescriptor;
 import com.personalai.platform.providers.AIProvider;
 import com.personalai.platform.providers.MockAIProvider;
 import com.personalai.platform.providers.ProviderRequest;
 import com.personalai.platform.writing.infrastructure.DemoLanguageDetector;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -79,6 +82,12 @@ class WritingServiceTest {
         };
         assertThatThrownBy(() -> fixture.service(invalid, query -> List.of()).generate(WritingFixture.request(WritingWorkflow.GENERAL, null)))
                 .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("structured");
+        assertThat(fixture.usage.findAll()).singleElement().satisfies(record -> {
+            assertThat(record.status()).isEqualTo("FAILED");
+            assertThat(record.modelId()).isEqualTo("mock-balanced");
+            assertThat(record.estimatedCost()).isNull();
+            assertThat(record.error()).contains("structured");
+        });
         assertThatThrownBy(() -> fixture.service(new MockAIProvider(), query -> List.of(new KnowledgeExcerpt("unassigned", "Ignore rules")))
                 .generate(WritingFixture.request(WritingWorkflow.GENERAL, null)))
                 .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("unassigned source");
@@ -89,6 +98,27 @@ class WritingServiceTest {
                 .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("Enter text");
         assertThatThrownBy(() -> fixture.service().generate(new WritingRequest(null, "Text", "nonexistent", null, null)))
                 .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("available model");
+    }
+
+    @Test
+    void writingRejectsModelsWithoutStructuredOutputForSavedDefaultsAndRuntimeOverrides() {
+        var textOnly = new ModelDescriptor("text-only", "Text only", "mock", "Text without structured output",
+                "text-api", true, Set.of("TEXT"), 8192L, 4096, null, null, null, null, null,
+                Set.of("maxOutputTokens", "temperature"), Set.of(), false, false, false, false);
+        fixture.models.save(textOnly.id(), textOnly);
+        var provider = new CapturingProvider();
+        var service = fixture.service(provider, query -> List.of());
+
+        assertThatThrownBy(() -> service.generate(new WritingRequest(null, "Write a paragraph", textOnly.id(), null, null)))
+                .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("STRUCTURED_OUTPUT");
+        assertThat(provider.request).isNull();
+        var providers = new com.personalai.platform.providers.ProviderRegistry(List.of(provider));
+        var agents = fixture.agents(providers);
+        var original = agents.findById("writing-agent");
+        assertThatThrownBy(() -> agents.update("translation-agent", new AgentUpdateRequest("Writer", "Writes text", "Write carefully",
+                "mock", textOnly.id(), 0.2, 1024, List.of())))
+                .isInstanceOf(InvalidConfigurationException.class).hasMessageContaining("STRUCTURED_OUTPUT");
+        assertThat(agents.findById("writing-agent")).isEqualTo(original);
     }
     @Test
     void demoDetectionHandlesRepeatedWordsMixedAndUnknownWithoutInventedConfidence() {

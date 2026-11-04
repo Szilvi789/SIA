@@ -7,8 +7,9 @@ The repository is rooted directly in this folder.
 ## What is included
 
 - A responsive Angular Material shell with Dashboard, Chat, Writing, My Agents, Projects, and Settings navigation.
-- Chat with agent/model selection, message history, and demonstration responses.
-- An agent editor with name, description, system prompt, provider, model, temperature, and maximum output tokens.
+- Chat and Writing with a shared model selector, temporary task/conversation overrides, and effective backend model metadata.
+- A configurable model registry with provider status, model-specific capabilities/parameters, optional timestamped pricing, application and agent tier mappings, and per-agent/model usage summaries.
+- Independent agent model defaults, optional permitted fallback, model-specific generation controls, and cost guardrails.
 - Three canonical agents: Coding, Documentation, and Writing & Communication. The former Translation and Email IDs remain compatible API aliases for the shared writing agent configuration.
 - A writing workspace for General Writing, Email, Translation, and Custom Document, with independent English, German, and Hungarian output settings.
 - Editable output, independent email subject/body generation, reusable Markdown presets, instruction previews, and revision-checked draft storage.
@@ -114,8 +115,8 @@ Both servers run locally by default. Stop each with `Ctrl+C`.
 | `GET` | `/api/agents` | List configured agents. |
 | `GET` | `/api/agents/{id}` | Read one agent. |
 | `PUT` | `/api/agents/{id}` | Update an existing agent in memory. |
-| `GET` | `/api/models` | List available mock models. |
-| `POST` | `/api/chat` | Execute an agent using the mock provider. |
+| `GET` / `PUT` | `/api/models[/{id}]` | Read and manage model metadata (PUT requires an ID). |
+| `POST` | `/api/chat` | Resolve a model and execute an agent. Only mock is currently installed. |
 | `GET` | `/api/writing/options` | Read workflow availability, presets, mock accounts, and capability flags. |
 | `POST` | `/api/writing/generate` | Generate an explicitly labeled writing sample. |
 | `POST` | `/api/writing/preview-instructions` | Preview the same composed instructions used by generation. |
@@ -126,6 +127,14 @@ Both servers run locally by default. Stop each with `Ctrl+C`.
 | `POST` | `/api/writing/email/send` | Validate confirmation; always reject delivery with the mock connector. |
 
 See [API documentation](docs/api.md) for request shapes, validation, and examples.
+
+## Models and providers
+
+Use **Settings** to manage model configurations, provider enablement, application defaults, and Economy/Balanced/Advanced mappings. Use **My Agents** for independent defaults and optional agent-specific mappings. Chat overrides apply to the current conversation; Writing overrides apply to the current writing task. **Restore default** resumes the saved agent configuration. Choosing a model changes backend resolution and provider dispatch; the response records the effective provider/model.
+
+Only the mock adapter is installed. OpenAI, Anthropic, and Local provider targets require future adapters and explicit server-side configuration. Model registration or provider enablement does not connect an API. No model prices, limits, or real capabilities are assumed. Mock usage has no measured tokens or API billing; real cost estimates require configured pricing and provider-reported usage.
+
+Registry entries, provider enablement, defaults, tier mappings, and usage records use temporary in-memory repository implementations and reset on backend restart. PostgreSQL is the intended future store; it is not yet implemented. See [Model management](docs/models.md) for resolution precedence, supported controls, fallback permission, credential boundaries, estimates, APIs, and persistence follow-up.
 
 ## Development and testing
 
@@ -167,7 +176,7 @@ The current verification environment uses JDK 22 with Java release 21 compilatio
 
 ## Current scope
 
-Agent updates, drafts, preset edits, knowledge metadata, and conversations are volatile. Projects and Settings remain navigation foundations. There is no database, authentication, streaming, real AI integration, document upload/storage implementation, vector database, embedding generation, executable tool access, terminal execution, or native desktop package. Email connectors have no live OAuth or delivery implementation; review checkboxes and generation never authorize sending. The unauthenticated API is intended for local use. Server-verified authorization and durable approval/idempotency storage are prerequisites for external integrations.
+Agent updates, drafts, preset edits, knowledge metadata, and conversations are volatile. Projects remains a navigation foundation; Settings manages providers, models, defaults, and usage. There is no database, authentication, streaming, real AI integration, document upload/storage implementation, vector database, embedding generation, executable tool access, terminal execution, or native desktop package. Email connectors have no live OAuth or delivery implementation; review checkboxes and generation never authorize sending. The unauthenticated API is intended for local use. Server-verified authorization and durable approval/idempotency storage are prerequisites for external integrations.
 
 ## Roadmap
 

@@ -1,3 +1,5 @@
+import { ModelExecution, ModelSelection, ResolvedModelMetadata } from '../core/models';
+
 export type WritingWorkflow = 'GENERAL' | 'EMAIL' | 'TRANSLATION' | 'CV' | 'COVER_LETTER' | 'JOB_APPLICATION' | 'CUSTOM_DOCUMENT';
 export type OutputLanguage = 'EN' | 'DE' | 'HU';
 export type InputLanguage = 'AUTO' | OutputLanguage;
@@ -57,7 +59,7 @@ export interface WritingOptions {
   capabilities: { generation: 'MOCK'; sending: boolean; recipientDiscovery?: 'MOCK'; attachments?: boolean };
 }
 
-export interface WritingRequest {
+export interface WritingRequest extends ModelSelection {
   workflow: WritingWorkflow;
   input: string;
   modelId: string;
@@ -71,7 +73,7 @@ export interface DetectedLanguage {
   method: string;
 }
 
-export interface WritingResult {
+export interface WritingResult extends ResolvedModelMetadata {
   id: string;
   title: string;
   content: string;
@@ -83,6 +85,7 @@ export interface WritingResult {
   mock: boolean;
   appliedRuleIds: string[];
   createdAt: string;
+  modelId?: string;
 }
 
 export interface WritingDraft extends WritingRequest {
@@ -98,6 +101,7 @@ export interface WritingDraft extends WritingRequest {
 export interface InstructionPreview { systemPrompt: string; appliedRuleIds: string[]; }
 
 export interface WritingDocument extends WritingDraft {
+  lastExecution?: ModelExecution | null;
   dirty: boolean;
   editVersion: number;
   manualContent: boolean;
@@ -122,9 +126,9 @@ export const DEFAULT_PREFERENCES: WritingPreferences = {
   customInstructions: '', selectedRuleIds: []
 };
 
-export function newWritingDocument(workflow: WritingWorkflow, modelId = 'mock-balanced', accountId = ''): WritingDocument {
+export function newWritingDocument(workflow: WritingWorkflow, modelId = '', accountId = ''): WritingDocument {
   return {
-    id: '', title: '', workflow, input: '', content: '', subject: '', modelId,
+    id: '', title: '', workflow, input: '', content: '', subject: '', modelId, conversationId: crypto.randomUUID(),
     preferences: { ...DEFAULT_PREFERENCES, selectedRuleIds: [] },
     email: { accountId, recipientName: '', to: '', cc: '', bcc: '', subject: '', body: '', generationPart: 'COMPLETE' },
     status: 'DRAFT', revision: 0, updatedAt: '', dirty: false, editVersion: 0,

@@ -37,8 +37,6 @@ public class InMemoryAgentRepository implements AgentRepository {
     }
 
     private Agent withId(Agent agent, String id) {
-        return new Agent(id, agent.name(), agent.description(), agent.systemPrompt(), agent.providerId(),
-                agent.modelId(), agent.temperature(), agent.maxOutputTokens(), agent.enabledTools(),
-                agent.ruleIds(), agent.knowledgeSourceIds());
+        return agent.withId(id);
     }
 }

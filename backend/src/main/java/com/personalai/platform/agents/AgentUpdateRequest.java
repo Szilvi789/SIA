@@ -1,5 +1,7 @@
 package com.personalai.platform.agents;
 
+import com.personalai.platform.models.ModelSettings;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -14,17 +16,25 @@ public record AgentUpdateRequest(
         @NotBlank @Size(max = 500) String description,
         @NotBlank @Size(max = 8_000) String systemPrompt,
         @NotBlank @Size(max = 80) String providerId,
-        @NotBlank @Size(max = 80) String modelId,
+        @Size(max = 80) String modelId,
         @NotNull @DecimalMin("0.0") @DecimalMax("2.0") Double temperature,
         @NotNull @Min(64) @Max(8_192) Integer maxOutputTokens,
         @NotNull @Size(max = 50) List<@NotBlank @Size(max = 80) String> enabledTools,
         @Size(max = 50) List<@NotBlank @Size(max = 80) String> ruleIds,
-        @Size(max = 50) List<@NotBlank @Size(max = 80) String> knowledgeSourceIds) {
+        @Size(max = 50) List<@NotBlank @Size(max = 80) String> knowledgeSourceIds,
+        @Valid ModelSettings modelSettings) {
 
     public AgentUpdateRequest {
         enabledTools = enabledTools == null ? null : List.copyOf(enabledTools);
         ruleIds = ruleIds == null ? null : List.copyOf(ruleIds);
         knowledgeSourceIds = knowledgeSourceIds == null ? null : List.copyOf(knowledgeSourceIds);
+    }
+
+    public AgentUpdateRequest(String name, String description, String systemPrompt, String providerId,
+                              String modelId, Double temperature, Integer maxOutputTokens, List<String> enabledTools,
+                              List<String> ruleIds, List<String> knowledgeSourceIds) {
+        this(name, description, systemPrompt, providerId, modelId, temperature, maxOutputTokens,
+                enabledTools, ruleIds, knowledgeSourceIds, null);
     }
 
     /** Legacy request shape intentionally leaves new assignments unspecified. */
@@ -38,6 +48,7 @@ public record AgentUpdateRequest(
         return new Agent(current.id(), name.strip(), description.strip(), systemPrompt.strip(), providerId,
                 modelId, temperature, maxOutputTokens, enabledTools,
                 ruleIds == null ? current.ruleIds() : ruleIds,
-                knowledgeSourceIds == null ? current.knowledgeSourceIds() : knowledgeSourceIds);
+                knowledgeSourceIds == null ? current.knowledgeSourceIds() : knowledgeSourceIds,
+                modelSettings == null ? current.modelSettings() : modelSettings);
     }
 }

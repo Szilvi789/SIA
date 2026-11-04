@@ -1,5 +1,20 @@
 # Implementation verification
 
+## Model management and runtime selection — 2026-11-04
+
+| Check | Result |
+| --- | --- |
+| Backend Maven `verify` | Passed: 162 tests, zero failures/errors/skips; executable JAR packaged. |
+| Frontend `npm.cmd test` | Passed: 91 tests across 11 files. |
+| Frontend `npm.cmd run build` | Passed without budget warnings; document export converters remain lazy-loaded. |
+| Runtime integration | HTTP tests verify independent Coding/Documentation/Writing defaults, temporary overrides, cross-provider dispatch, explicit API model IDs, uppercase tier mappings, legacy aliases, and effective response metadata. |
+| Validation and fallback | Tests cover registry edits/disablement, unknown metadata, missing adapters/configuration, unsupported parameters/capabilities, explicit fallback permission, rejection of higher/unknown fallback prices, safe pre-dispatch fallback, and no retry after an ambiguous provider failure. |
+| Usage and compatibility | Tests cover reported token accounting, timestamped decimal price snapshots, unknown mock usage, separate currency summaries, failure classification, preserved agent settings, and existing writing/export/email behavior. |
+
+Verification used JDK 22.0.2 with Java release 21 compilation, Maven 3.9.9, and Node.js 22.13.0. The Maven Wrapper bootstrap was blocked by proxy authentication (HTTP 407); the existing cached Maven distribution and dependency repository were used offline for the successful `verify`. Angular verification required permission to launch its local esbuild/test workers. An actual Java 21 runtime, real API providers, and PostgreSQL remain unverified/unimplemented. No dependency versions changed. See [Model management](models.md) for the scope and persistence boundaries.
+
+The following results describe earlier implementation stages.
+
 Checks performed on Windows on 2026-11-03:
 
 ## Writing & Communication — Phase 1

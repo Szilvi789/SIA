@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { ApiService, errorMessage } from './api.service';
-import { Agent, AIModel, Message } from './models';
+import { Agent, AIModel, GlobalModelSettings, Message, ModelSelection } from './models';
 import { canonicalAgentId, LEGACY_WRITING_AGENT_IDS, WRITING_AGENT_ID } from './agent-ids';
 
 @Injectable({ providedIn: 'root' })
@@ -9,11 +9,15 @@ export class WorkspaceService {
   private readonly api = inject(ApiService);
   readonly agents = signal<Agent[]>([]);
   readonly models = signal<AIModel[]>([]);
+  readonly modelSettings = signal<GlobalModelSettings>({ defaultModelId: '', tierMappings: {} });
   readonly loading = signal(true);
   readonly error = signal('');
   readonly online = signal(false);
   readonly selectedAgentId = signal('coding-agent');
   readonly selectedModelId = signal('mock-balanced');
+  readonly modelOverrides = signal<Record<string, ModelSelection>>({});
+  readonly selectedModelSelection = computed(() => this.modelOverrides()[this.selectedAgentId()] ?? {});
+  private readonly conversationIds = new Map<string, string>();
   readonly conversations = signal<Record<string, Message[]>>({});
   readonly drafts = signal<Record<string, string>>({});
   readonly pending = signal<{ agentId: string; modelId: string; content: string } | null>(null);
@@ -27,18 +31,17 @@ export class WorkspaceService {
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    forkJoin({ agents: this.api.agents(), models: this.api.models(), health: this.api.health() }).subscribe({
-      next: ({ agents, models, health }) => {
+    forkJoin({ agents: this.api.agents(), models: this.api.models(), health: this.api.health(), settings: this.api.modelSettings() }).subscribe({
+      next: ({ agents, models, health, settings }) => {
         this.agents.set(agents);
         this.models.set(models);
+        this.modelSettings.set(settings);
         this.online.set(health.status === 'UP');
         this.migrateWritingReferences();
         if (!agents.some(agent => agent.id === this.selectedAgentId())) {
           this.selectedAgentId.set(agents[0]?.id ?? '');
         }
-        if (!models.some(model => model.id === this.selectedModelId())) {
-          this.selectedModelId.set(models[0]?.id ?? '');
-        }
+        this.refreshSelectedModel();
         this.loading.set(false);
       },
       error: (error: unknown) => {
@@ -52,13 +55,28 @@ export class WorkspaceService {
   selectAgent(id: string): void {
     id = this.resolveAgentId(id);
     this.selectedAgentId.set(id);
-    const agent = this.agents().find(item => item.id === id);
-    if (agent) this.selectedModelId.set(agent.modelId);
+    this.refreshSelectedModel();
   }
 
   replaceAgent(agent: Agent): void {
     this.agents.update(agents => agents.map(item => item.id === agent.id ? agent : item));
-    if (agent.id === this.selectedAgentId()) this.selectedModelId.set(agent.modelId);
+    if (agent.id === this.selectedAgentId()) this.refreshSelectedModel();
+  }
+
+  selectModel(selection: ModelSelection): void {
+    if (this.sending()) return;
+    this.modelOverrides.update(overrides => ({ ...overrides, [this.selectedAgentId()]: selection }));
+    this.refreshSelectedModel();
+  }
+
+  private refreshSelectedModel(): void {
+    const agent = this.agents().find(item => item.id === this.selectedAgentId());
+    if (!agent) { this.selectedModelId.set(''); return; }
+    const selection = this.selectedModelSelection();
+    const tier = selection.tier || selection.overrideTier || agent?.modelSettings?.defaultTier;
+    this.selectedModelId.set(selection.modelId || selection.overrideModelId || (tier
+      ? agent?.modelSettings?.tierMappings?.[tier] || this.modelSettings().tierMappings[tier] || ''
+      : agent?.modelId || this.modelSettings().defaultModelId || ''));
   }
 
   setDraft(content: string, agentId = this.selectedAgentId()): void {
@@ -68,7 +86,7 @@ export class WorkspaceService {
 
   send(content: string): void {
     const message = content.trim();
-    if (!message || this.sending() || !this.selectedAgentId() || !this.selectedModelId()) return;
+    if (!message || this.sending() || !this.selectedAgentId()) return;
     const agentId = this.selectedAgentId();
     const modelId = this.selectedModelId();
     // Request state lives with the workspace so navigation cannot discard a failed message.
@@ -77,10 +95,12 @@ export class WorkspaceService {
     this.sending.set(true);
     this.chatErrors.update(errors => ({ ...errors, [agentId]: '' }));
     // Only store the exchange after the server accepts it, so a failed request can be retried safely.
-    this.api.chat({ agentId, modelId, message }).subscribe({
+    const conversationId = this.conversationIds.get(agentId) ?? crypto.randomUUID();
+    this.conversationIds.set(agentId, conversationId);
+    this.api.chat({ agentId, ...this.selectedModelSelection(), conversationId, message }).subscribe({
       next: response => {
         const user: Message = { id: `${response.id}-user`, role: 'user', content: message, createdAt: new Date().toISOString() };
-        const assistant: Message = { id: response.id, role: 'assistant', content: response.content, createdAt: response.createdAt, modelId: response.modelId };
+        const assistant: Message = { id: response.id, role: 'assistant', content: response.content, createdAt: response.createdAt, modelId: response.modelId, providerId: response.providerId, source: response.source, execution: response.execution };
         const currentId = this.resolveAgentId(agentId);
         this.conversations.update(conversations => ({ ...conversations, [currentId]: [...(conversations[currentId] ?? []), user, assistant] }));
         this.pending.set(null);
@@ -99,6 +119,8 @@ export class WorkspaceService {
     if (this.sending()) return;
     this.conversations.update(conversations => ({ ...conversations, [this.selectedAgentId()]: [] }));
     this.chatErrors.update(errors => ({ ...errors, [this.selectedAgentId()]: '' }));
+    this.conversationIds.delete(this.selectedAgentId());
+    this.selectModel({});
   }
 
   private resolveAgentId(id: string): string {

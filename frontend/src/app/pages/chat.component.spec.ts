@@ -33,6 +33,7 @@ describe('ChatComponent', () => {
     http.expectOne('/api/models').flush([{
       id: 'mock-balanced', name: 'Mock Balanced', providerId: 'mock', description: 'Demo model'
     }]);
+    http.expectOne('/api/model-settings').flush({defaultModelId: 'mock-balanced', tierMappings: {}});
     http.expectOne('/api/health').flush({ status: 'UP', provider: 'mock' });
   });
 
@@ -44,7 +45,7 @@ describe('ChatComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('What are we working on?');
     expect(fixture.nativeElement.textContent).toContain('Mock provider');
     expect(fixture.nativeElement.textContent).toContain('No real AI requests are made.');
-    expect(fixture.nativeElement.querySelectorAll('mat-select')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('mat-select')).toHaveLength(1);
   });
 
   it('disables sending whitespace and submits a message with the keyboard', () => {

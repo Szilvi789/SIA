@@ -3,8 +3,7 @@ package com.personalai.platform.agents;
 import com.personalai.platform.common.ResourceNotFoundException;
 import com.personalai.platform.common.InvalidConfigurationException;
 import com.personalai.platform.knowledge.KnowledgeService;
-import com.personalai.platform.models.ModelCatalog;
-import com.personalai.platform.providers.ProviderRegistry;
+import com.personalai.platform.models.ModelResolver;
 import com.personalai.platform.rules.RuleService;
 import com.personalai.platform.tools.ToolRegistry;
 import java.util.List;
@@ -13,17 +12,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class AgentService {
     private final AgentRepository repository;
-    private final ModelCatalog models;
-    private final ProviderRegistry providers;
+    private final ModelResolver resolver;
     private final RuleService rules;
     private final KnowledgeService knowledge;
     private final ToolRegistry tools;
 
-    public AgentService(AgentRepository repository, ModelCatalog models, ProviderRegistry providers,
+    public AgentService(AgentRepository repository, ModelResolver resolver,
                         RuleService rules, KnowledgeService knowledge, ToolRegistry tools) {
         this.repository = repository;
-        this.models = models;
-        this.providers = providers;
+        this.resolver = resolver;
         this.rules = rules;
         this.knowledge = knowledge;
         this.tools = tools;
@@ -40,8 +37,7 @@ public class AgentService {
 
     public Agent update(String id, AgentUpdateRequest request) {
         var updated = request.toAgent(findById(id));
-        providers.require(request.providerId());
-        models.requireCompatible(request.providerId(), request.modelId());
+        resolver.validateAgentSettings(updated);
         validateField("ruleIds", () -> rules.validateAssignments(updated.ruleIds()));
         validateField("knowledgeSourceIds", () -> knowledge.validateAssignments(id, updated.knowledgeSourceIds()));
         validateField("enabledTools", () -> tools.validateEnabledTools(updated.enabledTools()));

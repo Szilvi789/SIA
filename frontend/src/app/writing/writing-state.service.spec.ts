@@ -14,7 +14,7 @@ describe('WritingStateService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), provideHttpClientTesting(),
-      { provide: WorkspaceService, useValue: { selectedModelId: signal('mock-precise') } }
+      { provide: WorkspaceService, useValue: { selectedModelId: signal('mock-precise'), agents: signal([{id: 'writing-agent', modelId: 'mock-balanced'}]), modelSettings: signal({defaultModelId: 'mock-balanced', tierMappings: {}}) } }
     ] });
     http = TestBed.inject(HttpTestingController);
     state = TestBed.inject(WritingStateService);
@@ -25,11 +25,29 @@ describe('WritingStateService', () => {
 
   afterEach(() => http.verify());
 
-  it('keeps input and output language independent and chooses the workspace model', () => {
+  it('passes a task tier override to generation and restores the agent default without saving it', () => {
+    state.updateField('input', 'Write a short introduction');
+    state.selectModel({ overrideTier: 'BALANCED' });
+    state.generate();
+    const request = http.expectOne('/api/writing/generate');
+    expect(request.request.body.overrideTier).toBe('BALANCED');
+    expect(request.request.body.conversationId).toEqual(expect.any(String));
+    expect(request.request.body.modelId).toBe('');
+    request.flush(generatedResult());
+    state.selectModel({});
+    expect(state.modelSelection().overrideTier).toBeUndefined();
+    state.selectModel({ overrideModelId: 'mock-precise' });
+    state.selectWorkflow('EMAIL');
+    expect(state.modelSelection().overrideModelId).toBeUndefined();
+    state.selectWorkflow('GENERAL');
+    expect(state.modelSelection().overrideModelId).toBe('mock-precise');
+  });
+
+  it('keeps language preferences independent and defers to the writing agent default', () => {
     state.updatePreferences({ inputLanguage: 'HU', outputLanguage: 'DE' });
     state.updatePreferences({ inputLanguage: 'EN' });
     expect(state.document().preferences.outputLanguage).toBe('DE');
-    expect(state.document().modelId).toBe('mock-precise');
+    expect(state.document().modelId).toBe('');
     expect(state.document().email.accountId).toBe('mock-personal');
   });
 
@@ -68,7 +86,7 @@ describe('WritingStateService', () => {
     http.expectNone('/api/writing/generate');
     state.generate('COMPLETE', true);
     const request = http.expectOne('/api/writing/generate');
-    expect(request.request.body.modelId).toBe('mock-precise');
+    expect(request.request.body.modelId).toBe('');
     request.flush(generatedResult());
     expect(state.document().content).toBe('A mock document.');
     expect(state.document().manualContent).toBe(false);
@@ -143,7 +161,7 @@ describe('WritingStateService', () => {
     const create = http.expectOne('/api/writing/drafts');
     expect(create.request.method).toBe('POST');
     expect(create.request.body.content).toBe('Version being saved');
-    expect(create.request.body.modelId).toBe('mock-precise');
+    expect(create.request.body.modelId).toBe('mock-balanced');
     expect(create.request.body.dirty).toBeUndefined();
     state.updateContent('Newer manual version');
     create.flush({ ...create.request.body, id: 'draft-new', revision: 1, updatedAt: '2026-11-03T12:00:00Z' });

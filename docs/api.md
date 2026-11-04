@@ -122,7 +122,7 @@ These are demonstration templates, not external model identifiers.
 }
 ```
 
-Both IDs are required, nonblank strings of at most 80 characters. `message` is required, nonblank, and at most 12,000 characters. The model must be compatible with the agent's provider.
+`agentId` is required, nonblank, and at most 80 characters. `modelId` is optional and selects a registered model, including another provider. Empty/omitted model selection follows the agent default. `message` is required, nonblank, and at most 12,000 characters. The server validates capabilities, generation parameters, and provider readiness. Request/task tier and override fields plus execution metadata are documented in [Model management](models.md).
 
 A successful response is `200 OK`:
 
@@ -356,3 +356,8 @@ Errors use Spring `ProblemDetail` responses, typically with `application/problem
 ```
 
 The `errors` map appears for DTO field-validation failures. Validation message text may vary; clients should use the status and field names. Invalid provider/model selections and malformed JSON return `400` with a descriptive `detail`. Unknown agents return `404`. Internal stack traces are not exposed by the application configuration.
+
+
+## Model registry, provider configuration, and usage
+
+See [Model management APIs](models.md#api-examples) for registry CRUD, provider enablement/status, application and agent tier settings, shared Chat/Writing runtime selection fields, and usage summaries. All configuration and usage storage is temporary in memory. Only the mock provider adapter is installed.

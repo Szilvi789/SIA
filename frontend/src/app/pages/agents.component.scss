@@ -228,6 +228,11 @@
 .error-message {
   margin-bottom:13px
 }
+.checkbox-field { display:flex; align-items:flex-start; gap:9px; color:#637059; font-size:12px; line-height:1.8; margin:4px 0 20px }
+.checkbox-field input { margin-top:5px; accent-color:#536f40 }
+.model-note { color:#637059; font-size:12px; line-height:1.8; margin:0 0 20px }
+.tier-details { border-top:1px solid #edf0e6; margin-bottom:18px; padding-top:17px }
+.tier-details summary { cursor:pointer; font-size:12px; color:#536f40; margin-bottom:16px }
 @media(max-width:1100px) {
   .agents-layout {
     grid-template-columns:185px minmax(0,1fr);

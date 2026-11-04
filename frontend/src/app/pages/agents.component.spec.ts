@@ -118,4 +118,63 @@ describe('AgentsComponent', () => {
     expect(workspace.agents()[0].knowledgeSourceIds).toEqual(assigned.knowledgeSourceIds);
     expect(workspace.agents()[0].enabledTools).toEqual(assigned.enabledTools);
   });
+
+  it('saves independent tier, fallback authorization and model-specific parameters', () => {
+    const workspace = TestBed.inject(WorkspaceService);
+    workspace.models.set([
+      {id: 'mock-balanced', name: 'Balanced', providerId: 'mock', description: '', enabled: true, supportedParameters: ['maxOutputTokens', 'reasoningEffort'], reasoningEfforts: ['high'], maxOutputTokens: 32000},
+      {id: 'mock-economy', name: 'Economy', providerId: 'mock', description: '', enabled: true, supportedParameters: []}
+    ]);
+    const fixture = TestBed.createComponent(AgentsComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.form.patchValue({defaultTier: 'ADVANCED', ADVANCED: 'mock-balanced', fallbackModelId: 'mock-economy', allowFallback: false, parameterMaxOutputTokens: 16000, parameterTemperature: 1.5, reasoningEffort: 'high', maxEstimatedCost: 0.02, currency: 'EUR', allowUnknownCost: false});
+    component.form.markAsDirty();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('input[formControlName="parameterTemperature"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[formControlName="parameterMaxOutputTokens"]')).not.toBeNull();
+    component.save();
+    expect(updateAgent).toHaveBeenCalledWith('coding-agent', expect.objectContaining({
+      temperature: 0.7, maxOutputTokens: 2048,
+      modelSettings: {defaultTier: 'ADVANCED', tierMappings: {ADVANCED: 'mock-balanced'}, fallbackModelId: 'mock-economy', allowFallback: false, parameters: {maxOutputTokens: 16000, reasoningEffort: 'high'}, maxEstimatedCost: 0.02, currency: 'EUR', allowUnknownCost: false}
+    }));
+  });
+
+  it('clears a mismatched model when choosing another provider', () => {
+    const workspace = TestBed.inject(WorkspaceService);
+    workspace.models.update(models => [...models, {id: 'local-user-model', name: 'Local', providerId: 'local', description: ''}]);
+    const fixture = TestBed.createComponent(AgentsComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.form.controls.providerId.setValue('local');
+    expect(component.form.controls.modelId.value).toBe('');
+    expect(component.providerModels().map(model => model.id)).toEqual(['local-user-model']);
+    expect(workspace.agents()[0].modelId).toBe('mock-balanced');
+  });
+
+  it('blocks an output-token default above the configured model limit', () => {
+    const workspace = TestBed.inject(WorkspaceService);
+    workspace.models.set([{id: 'mock-balanced', name: 'Balanced', providerId: 'mock', description: '', supportedParameters: ['maxOutputTokens'], maxOutputTokens: 1000}]);
+    const fixture = TestBed.createComponent(AgentsComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.form.controls.parameterMaxOutputTokens.setValue(2000);
+    fixture.componentInstance.save();
+    expect(updateAgent).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.saveError()).toContain('model limit');
+  });
+
+  it('rejects zero top-p and timeouts outside the adapter range', () => {
+    const fixture = TestBed.createComponent(AgentsComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.form.patchValue({topP: 0, timeoutMs: 99});
+    expect(component.form.controls.topP.invalid).toBe(true);
+    expect(component.form.controls.timeoutMs.invalid).toBe(true);
+    component.save();
+    expect(updateAgent).not.toHaveBeenCalled();
+    component.form.patchValue({topP: 0.5, timeoutMs: 300001});
+    expect(component.form.controls.timeoutMs.invalid).toBe(true);
+    component.form.controls.timeoutMs.setValue(300000);
+    expect(component.form.valid).toBe(true);
+  });
 });

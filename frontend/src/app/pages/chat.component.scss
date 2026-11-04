@@ -21,8 +21,13 @@
 }
 .selectors {
   display:flex;
-  gap:13px
+  gap:13px;
+  flex:1;
+  min-width:0;
+  align-items:flex-start
 }
+.selectors app-model-selector { flex:1; min-width:0; }
+.response-model { color:#687565; font-size:11px; }
 .selectors mat-form-field {
   width:190px
 }
@@ -322,12 +327,14 @@
   }
   .selectors {
     width:100%;
-    gap:10px
+    gap:10px;
+    flex-wrap:wrap
   }
   .selectors mat-form-field {
-    width:calc(50% - 5px);
+    width:100%;
     min-width:0
   }
+  .selectors app-model-selector { flex-basis:100%; }
   .mock-indicator {
     margin:12px 0 0
   }

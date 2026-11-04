@@ -4,4 +4,12 @@ package com.personalai.platform.providers;
 public interface AIProvider {
     String id();
     String generate(ProviderRequest request);
+
+    /** Adapters may report real provider usage without fabricating counts for legacy/mock output. */
+    default ProviderResult generateResult(ProviderRequest request) {
+        return new ProviderResult(generate(request), null);
+    }
+
+    default boolean configured() { return "mock".equals(id()); }
+    default boolean mock() { return "mock".equals(id()); }
 }

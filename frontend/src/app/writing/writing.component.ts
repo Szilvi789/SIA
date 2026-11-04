@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { WorkspaceService } from '../core/workspace.service';
 import { IconComponent } from '../shared/icon.component';
+import { ModelSelectorComponent } from '../shared/model-selector.component';
 import { DocumentExportService } from './export/document-export.service';
 import { DocumentExportFormat } from './export/export.models';
 import { DEFAULT_PREFERENCES, GenerationPart, WritingDraft, WritingPreset, WritingWorkflow } from './writing.models';
@@ -10,13 +11,14 @@ import { WritingStateService } from './writing-state.service';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, MatButtonModule, IconComponent],
+  imports: [FormsModule, MatButtonModule, IconComponent, ModelSelectorComponent],
   templateUrl: './writing.component.html',
   styleUrl: './writing.component.scss'
 })
 export class WritingComponent {
   readonly state = inject(WritingStateService);
   readonly workspace = inject(WorkspaceService);
+  readonly writingAgent = computed(() => this.workspace.agents().find(agent => agent.id === 'writing-agent'));
   private readonly exports = inject(DocumentExportService);
   readonly section = signal<'workspace' | 'drafts' | 'presets' | 'preview'>('workspace');
   readonly exporting = signal(false);

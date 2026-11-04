@@ -1,0 +1,13 @@
+:host { display:block; min-width:0; }
+.model-selector { color:var(--text-secondary, #5d685f); font-size:12px; max-width:640px; }
+label { display:flex; flex-direction:column; gap:6px; color:var(--text-primary, #233c2f); font-weight:600; }
+select { border:1px solid var(--border, #dce3d9); background:var(--surface, #fff); border-radius:8px; color:inherit; padding:10px 12px; min-width:190px; max-width:100%; font:inherit; }
+details { margin-top:8px; }
+summary { cursor:pointer; color:#345941; }
+details label { margin-top:10px; }
+p { margin:7px 0; line-height:1.5; }
+.model-detail { font-size:11px; overflow-wrap:anywhere; }
+.model-error { color:#8b4d25; }
+.selection-foot { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:11px; }
+button { background:#edf2e9; color:#294b36; border:1px solid #d7e0d1; border-radius:6px; padding:5px 8px; cursor:pointer; font:inherit; }
+select:focus-visible,button:focus-visible,summary:focus-visible { outline:2px solid #477553; outline-offset:2px; }
